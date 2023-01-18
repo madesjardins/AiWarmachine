@@ -106,6 +106,8 @@ class Camera(QtCore.QObject):
         self._previous_time = time.time()
         self.current_fps = 0.0
 
+        self._effective_resolution = [None, None]
+
     def _reset_framebuffer(self):
         """Reset the framebuffer and framebuffer index."""
         self._framebuffer_list = [None, None, None]
@@ -146,8 +148,7 @@ class Camera(QtCore.QObject):
         self._previous_time = time.time()
         if valid_frame:
             # update actual capture resolution
-            self._capture_properties_dict[cv.CAP_PROP_FRAME_WIDTH] = frame.shape[1]
-            self._capture_properties_dict[cv.CAP_PROP_FRAME_HEIGHT] = frame.shape[0]
+            self._effective_resolution = [frame.shape[1], frame.shape[0]]
 
     def get_frame(self, show_info=False):
         """Get the latest frame available.
