@@ -16,8 +16,11 @@
 #
 """common functions."""
 
+from PyQt6 import QtWidgets
 import cv2 as cv
 import numpy as np
+
+from . import constants as aiw_constants
 
 
 def cmToIn(value):
@@ -99,3 +102,89 @@ def get_frame_with_text(
     )
     frame[:, :] = bg_color
     return cv.putText(frame, text, position, font, fontsize, color=color, thickness=2, lineType=cv.LINE_AA)
+
+
+def message_box(
+    title,
+    text,
+    info_text=None,
+    details_text=None,
+    icon_name="NoIcon",
+    button_names_list=None
+):
+    """Pop a message box and wait for user answer.
+
+    :param title: The window title.
+    :type title: str
+
+    :param text: Primary text to show.
+    :type text: str
+
+    :param info_text: Additional text to show if any. (None)
+    :type info_text: str
+
+    :param details_text: Details text to show in a separate section if any. (None)
+    :type details_text: str
+
+    :param icon_name: Name of the icon. ("NoIcon")
+    :type icon_name: str
+
+        .. note:: The choices of icon name are "Question", "Information", "Warning", "Critical" and "NoIcon".
+
+    :param button_names_list: List of button names to show. (["Close"])
+    :type button_names_list: list of str
+
+        .. note:: The choices of button names are "Ok", "Open", "Save", "Cancel", "Close", "Yes", "No", "Abort", "Retry" and "Ignore".
+
+    :return: The name of the pressed button.
+    :rtype: str
+    """
+    msg_dial = QtWidgets.QMessageBox()
+    msg_dial.setWindowTitle(title)
+    msg_dial.setText(text)
+    if info_text:
+        msg_dial.setInformativeText(info_text)
+    if details_text:
+        msg_dial.setDetailedText(details_text)
+    if (icon_obj := aiw_constants.MESSAGE_BOX_ICON_NAME_TO_OBJECT_DICT.get(icon_name, None)) is not None:
+        msg_dial.setIcon(icon_obj)
+    else:
+        msg_dial.setIcon(aiw_constants.MESSAGE_BOX_ICON_NAME_TO_OBJECT_DICT["NoIcon"])
+
+    valid_button_objs_list = [
+        _button_obj
+        for _button_name in button_names_list
+        if (_button_obj := aiw_constants.MESSAGE_BOX_BUTTON_NAME_TO_OBJECT_DICT.get(_button_name, None)) is not None
+    ]
+    if not valid_button_objs_list:
+        valid_button_objs_list = [aiw_constants.MESSAGE_BOX_BUTTON_NAME_TO_OBJECT_DICT["Close"]]
+
+    buttons_flag = valid_button_objs_list[0]
+    if len(valid_button_objs_list) > 1:
+        for button_obj in valid_button_objs_list[1:]:
+            buttons_flag = buttons_flag | button_obj
+
+    msg_dial.setStandardButtons(buttons_flag)
+
+    return find_key_for_value_in_dict(msg_dial.exec(), aiw_constants.MESSAGE_BOX_BUTTON_NAME_TO_OBJECT_DICT)
+
+
+def find_key_for_value_in_dict(value, dictionary, default=None):
+    """Find key corresponding value in dictionary.
+
+    :param value: The value you are looking for.
+    :type value: object
+
+    :param dictionary: The dict to look into.
+    :type dictionary: dict
+
+    :param default: The key to return if value is not found. (None)
+    :type default: object
+
+    :return: The key.
+    :rtype: object
+    """
+    for k, v in dictionary.items():
+        if v == value:
+            return k
+    return default

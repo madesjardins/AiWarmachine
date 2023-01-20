@@ -36,7 +36,7 @@ class Camera(QtCore.QObject):
 
     def __init__(
         self,
-        name,
+        name="",
         model_name="",
         device_id=0,
         capture_properties_dict=None,
@@ -48,7 +48,7 @@ class Camera(QtCore.QObject):
     ):
         """Initialize.
 
-        :param name: A unique camera name to identify it.
+        :param name: A name to describe the camera.
         :type name: str
 
             **Example: 'Top View'**
@@ -82,8 +82,8 @@ class Camera(QtCore.QObject):
         super().__init__()
 
         # basic info
-        self._name = name
-        self._model_name = model_name
+        self.name = name
+        self.model_name = model_name
         self.debug = debug
 
         # calibration params
@@ -150,21 +150,25 @@ class Camera(QtCore.QObject):
             # update actual capture resolution
             self._effective_resolution = [frame.shape[1], frame.shape[0]]
 
-    def get_frame(self, show_info=False):
+    def get_frame(self, show_info=False, return_info=False):
         """Get the latest frame available.
 
         :param show_info: Print resolution and fps on the image. (False)
         :type show_info: bool
+
+        :param return_info: If set to True, will also return info string "{width}x{height} @ {fps}fps" along with the frame as a tuple. (False)
+        :type return_info: bool
 
         :return: The frame.
         :rtype: :class:`numpy.ndarray`
         """
         if self._framebuffer_index >= 0:
             frame = self._framebuffer_list[self._framebuffer_index]
+            info_str = f'{frame.shape[1]}x{frame.shape[0]} @ {self.current_fps:0.1f}fps'
             if show_info:
-                return cv.putText(
+                info_frame = cv.putText(
                     frame,
-                    f'{frame.shape[1]}x{frame.shape[0]} @ {self.current_fps:0.1f}fps',
+                    info_str,
                     (50, 50),
                     cv.FONT_HERSHEY_SIMPLEX,
                     1,
@@ -172,19 +176,19 @@ class Camera(QtCore.QObject):
                     2,
                     cv.LINE_AA
                 )
+                if return_info:
+                    return info_frame, info_str
+                else:
+                    return info_frame,
+
+            elif return_info:
+                return frame, info_str
+
             else:
                 return frame
 
         else:
             return None
-
-    def get_name(self):
-        """Get this camera name.
-
-        :return: Camera name.
-        :rtype: str
-        """
-        return self._name
 
     @property
     def device_id(self):

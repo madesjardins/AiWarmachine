@@ -16,6 +16,7 @@
 #
 """Various constants."""
 
+from PyQt6 import QtWidgets
 import cv2 as cv
 
 CRITERIA = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -24,7 +25,7 @@ DEFAULT_CAPTURE_API = cv.CAP_DSHOW
 
 DEFAULT_CAPTURE_WIDTH = 1920
 DEFAULT_CAPTURE_HEIGHT = 1080
-DEFAULT_FPS = 30
+DEFAULT_FPS = 30.0
 
 DEFAULT_CAPTURE_PROPERTIES_DICT = {
     cv.CAP_PROP_HW_ACCELERATION: cv.VIDEO_ACCELERATION_ANY,
@@ -56,3 +57,26 @@ CALIBRATION_VIEWS = [
     "Tilt down from front.",
     "Tilt down from side."
 ]
+
+DEFAULT_DEVICE_IDS_LIST = [0, 1, 2, 3, 4]
+
+MESSAGE_BOX_BUTTON_NAME_TO_OBJECT_DICT = {
+    "Ok": QtWidgets.QMessageBox.StandardButton.Ok,
+    "Open": QtWidgets.QMessageBox.StandardButton.Open,
+    "Save": QtWidgets.QMessageBox.StandardButton.Save,
+    "Cancel": QtWidgets.QMessageBox.StandardButton.Cancel,
+    "Close": QtWidgets.QMessageBox.StandardButton.Close,
+    "Yes": QtWidgets.QMessageBox.StandardButton.Yes,
+    "No": QtWidgets.QMessageBox.StandardButton.No,
+    "Abort": QtWidgets.QMessageBox.StandardButton.Abort,
+    "Retry": QtWidgets.QMessageBox.StandardButton.Retry,
+    "Ignore": QtWidgets.QMessageBox.StandardButton.Ignore
+}
+
+MESSAGE_BOX_ICON_NAME_TO_OBJECT_DICT = {
+    "NoIcon": QtWidgets.QMessageBox.Icon.NoIcon,
+    "Question": QtWidgets.QMessageBox.Icon.Question,
+    "Information": QtWidgets.QMessageBox.Icon.Information,
+    "Warning": QtWidgets.QMessageBox.Icon.Warning,
+    "Critical": QtWidgets.QMessageBox.Icon.Critical
+}
