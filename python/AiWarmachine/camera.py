@@ -179,13 +179,16 @@ class Camera(QtCore.QObject):
                 if return_info:
                     return info_frame, info_str
                 else:
-                    return info_frame,
+                    return info_frame
 
             elif return_info:
                 return frame, info_str
 
             else:
                 return frame
+
+        elif return_info:
+            return None, None
 
         else:
             return None

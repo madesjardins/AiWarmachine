@@ -83,6 +83,9 @@
         <layout class="QGridLayout" name="grid_cameras_list_buttons">
          <item row="0" column="0">
           <widget class="QPushButton" name="push_add_camera">
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
            <property name="text">
             <string>Add</string>
            </property>
@@ -90,6 +93,12 @@
          </item>
          <item row="0" column="1">
           <widget class="QPushButton" name="push_delete_camera">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
            <property name="text">
             <string>Delete</string>
            </property>
@@ -97,6 +106,9 @@
          </item>
          <item row="1" column="0">
           <widget class="QPushButton" name="push_load_camera">
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
            <property name="text">
             <string>Load</string>
            </property>
@@ -104,6 +116,9 @@
          </item>
          <item row="1" column="1">
           <widget class="QPushButton" name="push_save_camera">
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
            <property name="text">
             <string>Save</string>
            </property>
@@ -352,6 +367,9 @@
              <width>160</width>
              <height>16777215</height>
             </size>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::StrongFocus</enum>
            </property>
            <property name="readOnly">
             <bool>false</bool>
@@ -688,6 +706,9 @@
         <layout class="QHBoxLayout" name="hbox_calibrate_buttons">
          <item>
           <widget class="QPushButton" name="push_calibrate">
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
            <property name="text">
             <string>Calibrate</string>
            </property>
@@ -695,6 +716,9 @@
          </item>
          <item>
           <widget class="QPushButton" name="push_pose">
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
            <property name="text">
             <string>Pose</string>
            </property>
@@ -808,6 +832,9 @@
        </item>
        <item>
         <widget class="QCheckBox" name="check_display_actual_resolution">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
          <property name="text">
           <string>Display actual resolution</string>
          </property>
@@ -853,6 +880,9 @@
            <height>120</height>
           </size>
          </property>
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
          <property name="text">
           <string>Top View</string>
          </property>
@@ -875,6 +905,9 @@
            <height>120</height>
           </size>
          </property>
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
          <property name="text">
           <string>Front Tilted</string>
          </property>
@@ -896,6 +929,9 @@
            <width>215</width>
            <height>120</height>
           </size>
+         </property>
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
          </property>
          <property name="text">
           <string>Side Tilted</string>
@@ -944,6 +980,9 @@
            <height>120</height>
           </size>
          </property>
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
          <property name="text">
           <string>Pose</string>
          </property>
@@ -986,6 +1025,9 @@
      </item>
      <item>
       <widget class="QPushButton" name="push_quit">
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
        <property name="text">
         <string>Quit</string>
        </property>

@@ -21,6 +21,7 @@ Every valid Camera has a CameraFeed object.
 Once you start the CameraFeed, frames will be grabbed and a frame_grabbed signal will be emitted.
 Frames sent through the signal are :class:`numpy.ndarray`.
 """
+import traceback
 
 import numpy as np
 import cv2 as cv
@@ -130,7 +131,7 @@ class CameraFeed(QtCore.QThread):
             for property_value in self._capture_properties_dict.items():
                 props_list.extend(property_value)
             if self.debug:
-                print(f"Creating VideoCapture for '{self._camera.get_name()}' device ID {self._camera.device_id}.")
+                print(f"Creating VideoCapture for '{self._camera.name}' device ID {self._camera.device_id}.")
                 print(f"Using properties: {props_list}.")
             try:
                 self._capture = cv.VideoCapture(
@@ -139,13 +140,14 @@ class CameraFeed(QtCore.QThread):
                     props_list
                 )
             except Exception:
-                print(f"ERROR: Unable create VideoCapture '{self._camera.get_name()}'.")
+                print(f"ERROR: Unable create VideoCapture '{self._camera.name}'.")
+                traceback.print_exc()
                 frame = common.get_frame_with_text("Failed to create VideoCapture.", fontsize=2)
                 self.frame_grabbed.emit(frame, False)
                 return
 
             if self._capture is None or not self._capture.isOpened():
-                print(f"ERROR: Unable to start camera feed for camera '{self._camera.get_name()}'.")
+                print(f"ERROR: Unable to start camera feed for camera '{self._camera.name}'.")
                 frame = common.get_frame_with_text("Unable to start camera feed.", fontsize=2)
                 self.frame_grabbed.emit(frame, False)
                 return
