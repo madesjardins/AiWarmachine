@@ -37,6 +37,11 @@ DEFAULT_CAPTURE_PROPERTIES_DICT = {
     cv.CAP_PROP_AUTO_EXPOSURE: 1,  # 1 = Off
     cv.CAP_PROP_EXPOSURE: -6,
     cv.CAP_PROP_FOURCC: cv.VideoWriter_fourcc(*'MJPG'),
+    cv.CAP_PROP_BRIGHTNESS: 128,
+    cv.CAP_PROP_CONTRAST: 128,
+    cv.CAP_PROP_GAIN: 128,
+    cv.CAP_PROP_SATURATION: 128,
+    cv.CAP_PROP_SHARPNESS: 128,
 }
 
 CAPTURE_PROPERTIES_NAMES_DICT = {
@@ -49,6 +54,11 @@ CAPTURE_PROPERTIES_NAMES_DICT = {
     cv.CAP_PROP_AUTO_EXPOSURE: "Auto exposure",
     cv.CAP_PROP_EXPOSURE: "Exposure",
     cv.CAP_PROP_FOURCC: "FOURCC",
+    cv.CAP_PROP_BRIGHTNESS: "Brightness",
+    cv.CAP_PROP_CONTRAST: "Contrast",
+    cv.CAP_PROP_GAIN: "Gain",
+    cv.CAP_PROP_SATURATION: "Saturation",
+    cv.CAP_PROP_SHARPNESS: "Sharpness",
 }
 
 

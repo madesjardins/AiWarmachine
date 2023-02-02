@@ -19,6 +19,7 @@ import sys
 import os
 import traceback
 import re
+from functools import partial
 
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import cv2 as cv
@@ -72,10 +73,24 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.ui.edit_camera_name.textEdited.connect(self.set_current_camera_name)
         self.ui.edit_camera_model_name.textEdited.connect(self.set_current_camera_model_name)
         self.ui.combo_camera_device_id.currentTextChanged.connect(self.set_current_camera_device_id)
+        self.ui.combo_camera_capture_resolution.currentTextChanged.connect(self.set_camera_capture_resolution)
+        self.ui.spin_camera_exposure.valueChanged.connect(partial(self.set_camera_prop_value, cv.CAP_PROP_EXPOSURE))
+        self.ui.slider_camera_focus.valueChanged.connect(partial(self.set_camera_prop_value, cv.CAP_PROP_FOCUS))
+        self.ui.push_camera_focus_reset.clicked.connect(partial(self.reset_camera_slider, self.ui.slider_camera_focus, 0))
+        self.ui.slider_camera_brightness.valueChanged.connect(partial(self.set_camera_prop_value, cv.CAP_PROP_BRIGHTNESS))
+        self.ui.push_camera_brightness_reset.clicked.connect(partial(self.reset_camera_slider, self.ui.slider_camera_brightness, 128))
+        self.ui.slider_camera_contrast.valueChanged.connect(partial(self.set_camera_prop_value, cv.CAP_PROP_CONTRAST))
+        self.ui.push_camera_contrast_reset.clicked.connect(partial(self.reset_camera_slider, self.ui.slider_camera_contrast, 128))
+        self.ui.slider_camera_gain.valueChanged.connect(partial(self.set_camera_prop_value, cv.CAP_PROP_GAIN))
+        self.ui.push_camera_gain_reset.clicked.connect(partial(self.reset_camera_slider, self.ui.slider_camera_gain, 128))
+        self.ui.slider_camera_saturation.valueChanged.connect(partial(self.set_camera_prop_value, cv.CAP_PROP_SATURATION))
+        self.ui.push_camera_saturation_reset.clicked.connect(partial(self.reset_camera_slider, self.ui.slider_camera_saturation, 128))
+        self.ui.slider_camera_sharpness.valueChanged.connect(partial(self.set_camera_prop_value, cv.CAP_PROP_SHARPNESS))
+        self.ui.push_camera_sharpness_reset.clicked.connect(partial(self.reset_camera_slider, self.ui.slider_camera_sharpness, 128))
 
         # self.ui.edit_camera_model_name = current_camera.model_name
         # self.ui.spin_device_id.valueChanged.connect(self.change_device_id)
-        # self.ui.combo_resolution.currentTextChanged.connect(self.change_resolution)
+
         # self.ui.spin_exposure.valueChanged.connect(self.change_exposure)
         # self.ui.spin_focus.valueChanged.connect(self.change_focus)
 
@@ -318,7 +333,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         device_id = int(device_id_str)
 
         # create the camera objects
-        new_camera = aiw_camera.Camera(device_id=device_id)
+        new_camera = aiw_camera.Camera(device_id=device_id, debug=True)
         self._cameras_dict[device_id] = new_camera
 
         # add to list
@@ -341,26 +356,47 @@ class CalibrationDialog(QtWidgets.QDialog):
         except Exception:
             traceback.print_exc()
 
-    # @QtCore.pyqtSlot(int)
-    # def change_device_id(self, device_id):
-    #     self.camera.device_id = device_id
-    #     self.start_camera()
+    @QtCore.pyqtSlot(str)
+    def set_camera_capture_resolution(self, resolution_str):
+        """Set the current camera capture resolution.
 
-    # @QtCore.pyqtSlot(str)
-    # def change_resolution(self, resolution_text):
-    #     was_running = self.camera.is_running()
-    #     width_str, height_str = resolution_text.split("x")
-    #     if was_running:
-    #         self.camera.stop()
-    #     self.camera.set_capture_property(cv.CAP_PROP_FRAME_WIDTH, int(width_str))
-    #     self.camera.set_capture_property(cv.CAP_PROP_FRAME_HEIGHT, int(height_str))
-    #     if was_running:
-    #         self.camera.start()
+        :param resolution_str: Resolution as a str '{width}x{height}'.
+        :type resolution_str: str
+        """
+        if self._disable_camera_settings_change:
+            return
+        if (current_camera := self._cameras_dict.get(self._current_camera_id)) is not None:
+            self.pause_ticker()
+            width_str, height_str = resolution_str.split("x")
+            current_camera.stop()
+            current_camera.set_capture_property(cv.CAP_PROP_FRAME_WIDTH, int(width_str))
+            current_camera.set_capture_property(cv.CAP_PROP_FRAME_HEIGHT, int(height_str))
+            current_camera.start()
+            self.start_ticker()
 
-    # @QtCore.pyqtSlot(int)
-    # def change_exposure(self, exposure):
-    #     self.camera.set_capture_property(cv.CAP_PROP_EXPOSURE, exposure)
+    @QtCore.pyqtSlot(int, int)
+    def set_camera_prop_value(self, property, value):
+        """Set the current camera property value.
 
-    # @QtCore.pyqtSlot(int)
-    # def change_focus(self, focus):
-    #     self.camera.set_capture_property(cv.CAP_PROP_FOCUS, focus)
+        :param property: The cv.CAM_PROP_ value for this property.
+        :type property: int
+
+        :param value: The value.
+        :type value: int
+        """
+        if self._disable_camera_settings_change:
+            return
+        if (current_camera := self._cameras_dict.get(self._current_camera_id)) is not None:
+            current_camera.set_capture_property(property, value)
+
+    @QtCore.pyqtSlot(QtWidgets.QSlider, int)
+    def reset_camera_slider(self, slider, default_value):
+        """Reset the slider to its default value..
+
+        :param slider: The slider to reset.
+        :type slider: :class:`QSlider`
+
+        :param default_value: The default value.
+        :type default_value: int
+        """
+        slider.setValue(default_value)

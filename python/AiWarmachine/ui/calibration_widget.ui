@@ -7,13 +7,13 @@
     <x>0</x>
     <y>0</y>
     <width>1215</width>
-    <height>660</height>
+    <height>804</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>1215</width>
-    <height>660</height>
+    <width>0</width>
+    <height>804</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -153,17 +153,10 @@
          <property name="topMargin">
           <number>0</number>
          </property>
-         <item row="3" column="0">
-          <widget class="QLabel" name="label_camera_model_name">
+         <item row="8" column="0">
+          <widget class="QLabel" name="label_camera_brightness">
            <property name="text">
-            <string>Camera Model Name:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="0">
-          <widget class="QLabel" name="label_camera_capture_resolution">
-           <property name="text">
-            <string>Capture Resolution:</string>
+            <string>Brightness:</string>
            </property>
           </widget>
          </item>
@@ -177,7 +170,7 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>160</width>
+             <width>210</width>
              <height>0</height>
             </size>
            </property>
@@ -198,17 +191,24 @@
            </property>
           </widget>
          </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_camera_model_name">
+           <property name="text">
+            <string>Camera Model Name:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="label_camera_capture_resolution">
+           <property name="text">
+            <string>Capture Resolution:</string>
+           </property>
+          </widget>
+         </item>
          <item row="2" column="0">
           <widget class="QLabel" name="label_camera_usage">
            <property name="text">
             <string>Usage:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="0">
-          <widget class="QLabel" name="label_camera_effective_resolution">
-           <property name="text">
-            <string>Effective Resolution:</string>
            </property>
           </widget>
          </item>
@@ -225,7 +225,7 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>160</width>
+             <width>210</width>
              <height>0</height>
             </size>
            </property>
@@ -240,17 +240,24 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_camera_name">
-           <property name="text">
-            <string>Name:</string>
-           </property>
-          </widget>
-         </item>
          <item row="6" column="0">
           <widget class="QLabel" name="label_camera_exposure">
            <property name="text">
             <string>Exposure:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QLabel" name="label_camera_effective_resolution">
+           <property name="text">
+            <string>Effective Resolution:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_camera_name">
+           <property name="text">
+            <string>Name:</string>
            </property>
           </widget>
          </item>
@@ -264,7 +271,7 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>160</width>
+             <width>210</width>
              <height>0</height>
             </size>
            </property>
@@ -317,34 +324,6 @@
            </item>
           </widget>
          </item>
-         <item row="3" column="1">
-          <widget class="QLineEdit" name="edit_camera_model_name">
-           <property name="enabled">
-            <bool>true</bool>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>160</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>160</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="readOnly">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
          <item row="0" column="1">
           <widget class="QLineEdit" name="edit_camera_name">
            <property name="enabled">
@@ -358,7 +337,7 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>160</width>
+             <width>210</width>
              <height>0</height>
             </size>
            </property>
@@ -376,53 +355,8 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_camera_device_id">
-           <property name="text">
-            <string>Device ID:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="7" column="0">
-          <widget class="QLabel" name="label_camera_focus">
-           <property name="text">
-            <string>Focus:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="7" column="1">
-          <widget class="QSpinBox" name="spin_camera_focus">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>160</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>160</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="minimum">
-            <number>0</number>
-           </property>
-           <property name="maximum">
-            <number>255</number>
-           </property>
-           <property name="value">
-            <number>0</number>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QComboBox" name="combo_camera_device_id">
+         <item row="3" column="1">
+          <widget class="QLineEdit" name="edit_camera_model_name">
            <property name="enabled">
             <bool>true</bool>
            </property>
@@ -434,7 +368,7 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>160</width>
+             <width>210</width>
              <height>0</height>
             </size>
            </property>
@@ -443,6 +377,16 @@
              <width>160</width>
              <height>16777215</height>
             </size>
+           </property>
+           <property name="readOnly">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_camera_device_id">
+           <property name="text">
+            <string>Device ID:</string>
            </property>
           </widget>
          </item>
@@ -459,7 +403,7 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>160</width>
+             <width>210</width>
              <height>0</height>
             </size>
            </property>
@@ -485,6 +429,528 @@
             </property>
            </item>
           </widget>
+         </item>
+         <item row="7" column="0">
+          <widget class="QLabel" name="label_camera_focus">
+           <property name="text">
+            <string>Focus:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QComboBox" name="combo_camera_device_id">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>210</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>160</width>
+             <height>16777215</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item row="9" column="0">
+          <widget class="QLabel" name="label_camera_contrast">
+           <property name="text">
+            <string>Contrast:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="12" column="0">
+          <widget class="QLabel" name="label_camera_sharpness">
+           <property name="text">
+            <string>Sharpness:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="9" column="1">
+          <layout class="QHBoxLayout" name="hbox_camera_contrast">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QSlider" name="slider_camera_contrast">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>167</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>18</height>
+              </size>
+             </property>
+             <property name="minimum">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <number>255</number>
+             </property>
+             <property name="value">
+              <number>128</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="Line" name="line_camera_contrast">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="push_camera_contrast_reset">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>38</width>
+               <height>18</height>
+              </size>
+             </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="text">
+              <string>Reset</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="12" column="1">
+          <layout class="QHBoxLayout" name="hbox_camera_sharpness">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QSlider" name="slider_camera_sharpness">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>167</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>18</height>
+              </size>
+             </property>
+             <property name="minimum">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <number>255</number>
+             </property>
+             <property name="value">
+              <number>128</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="Line" name="line_camera_sharpness">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="push_camera_sharpness_reset">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>38</width>
+               <height>18</height>
+              </size>
+             </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="text">
+              <string>Reset</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="8" column="1">
+          <layout class="QHBoxLayout" name="hbox_camera_brightness">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QSlider" name="slider_camera_brightness">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>167</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>18</height>
+              </size>
+             </property>
+             <property name="minimum">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <number>255</number>
+             </property>
+             <property name="value">
+              <number>128</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="tickPosition">
+              <enum>QSlider::NoTicks</enum>
+             </property>
+             <property name="tickInterval">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="Line" name="line_camera_brightness">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="push_camera_brightness_reset">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>38</width>
+               <height>18</height>
+              </size>
+             </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="text">
+              <string>Reset</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="7" column="1">
+          <layout class="QHBoxLayout" name="hbox_camera_focus">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QSlider" name="slider_camera_focus">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>167</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>18</height>
+              </size>
+             </property>
+             <property name="minimum">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <number>255</number>
+             </property>
+             <property name="value">
+              <number>0</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="Line" name="line_camera_focus">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="push_camera_focus_reset">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>38</width>
+               <height>18</height>
+              </size>
+             </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="text">
+              <string>Reset</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="11" column="0">
+          <widget class="QLabel" name="label_camera_saturation">
+           <property name="text">
+            <string>Saturation</string>
+           </property>
+          </widget>
+         </item>
+         <item row="10" column="0">
+          <widget class="QLabel" name="label_camera_gain">
+           <property name="text">
+            <string>Gain:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="10" column="1">
+          <layout class="QHBoxLayout" name="hbox_camera_gain">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QSlider" name="slider_camera_gain">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>167</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>18</height>
+              </size>
+             </property>
+             <property name="minimum">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <number>255</number>
+             </property>
+             <property name="value">
+              <number>128</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="Line" name="line_camera_gain">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="push_camera_gain_reset">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>38</width>
+               <height>18</height>
+              </size>
+             </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="text">
+              <string>Reset</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="11" column="1">
+          <layout class="QHBoxLayout" name="hbox_camera_saturation">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QSlider" name="slider_camera_saturation">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>167</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>18</height>
+              </size>
+             </property>
+             <property name="minimum">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <number>255</number>
+             </property>
+             <property name="value">
+              <number>128</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="Line" name="line_camera_saturation">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="push_camera_saturation_reset">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>38</width>
+               <height>18</height>
+              </size>
+             </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="text">
+              <string>Reset</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </item>
@@ -776,7 +1242,7 @@
             <x>0</x>
             <y>0</y>
             <width>621</width>
-            <height>565</height>
+            <height>709</height>
            </rect>
           </property>
           <property name="sizePolicy">
@@ -1039,10 +1505,6 @@
  </widget>
  <tabstops>
   <tabstop>list_cameras</tabstop>
-  <tabstop>push_add_camera</tabstop>
-  <tabstop>push_delete_camera</tabstop>
-  <tabstop>push_load_camera</tabstop>
-  <tabstop>push_save_camera</tabstop>
   <tabstop>edit_camera_name</tabstop>
   <tabstop>combo_camera_device_id</tabstop>
   <tabstop>combo_camera_usage</tabstop>
@@ -1050,21 +1512,18 @@
   <tabstop>combo_camera_capture_resolution</tabstop>
   <tabstop>edit_camera_effective_resolution</tabstop>
   <tabstop>spin_camera_exposure</tabstop>
-  <tabstop>spin_camera_focus</tabstop>
+  <tabstop>slider_camera_focus</tabstop>
+  <tabstop>slider_camera_brightness</tabstop>
+  <tabstop>slider_camera_contrast</tabstop>
+  <tabstop>slider_camera_saturation</tabstop>
+  <tabstop>slider_camera_gain</tabstop>
+  <tabstop>slider_camera_sharpness</tabstop>
   <tabstop>spin_number_of_squares_w</tabstop>
   <tabstop>spin_number_of_squares_h</tabstop>
   <tabstop>double_length_of_square</tabstop>
   <tabstop>double_thickness</tabstop>
   <tabstop>combo_units</tabstop>
-  <tabstop>push_calibrate</tabstop>
-  <tabstop>push_pose</tabstop>
   <tabstop>scroll_viewport</tabstop>
-  <tabstop>check_display_actual_resolution</tabstop>
-  <tabstop>push_top_view_image</tabstop>
-  <tabstop>push_front_tilted_image</tabstop>
-  <tabstop>push_side_tilted_image</tabstop>
-  <tabstop>push_pose_image</tabstop>
-  <tabstop>push_quit</tabstop>
  </tabstops>
  <resources/>
  <connections/>
