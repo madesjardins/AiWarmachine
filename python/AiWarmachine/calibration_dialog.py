@@ -77,6 +77,8 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.ui.spin_camera_exposure.valueChanged.connect(partial(self.set_camera_prop_value, cv.CAP_PROP_EXPOSURE))
         self.ui.slider_camera_focus.valueChanged.connect(partial(self.set_camera_prop_value, cv.CAP_PROP_FOCUS))
         self.ui.push_camera_focus_reset.clicked.connect(partial(self.reset_camera_slider, self.ui.slider_camera_focus, 0))
+        self.ui.slider_camera_zoom.valueChanged.connect(partial(self.set_camera_prop_value, cv.CAP_PROP_ZOOM))
+        self.ui.push_camera_zoom_reset.clicked.connect(partial(self.reset_camera_slider, self.ui.slider_camera_zoom, 100))
         self.ui.slider_camera_brightness.valueChanged.connect(partial(self.set_camera_prop_value, cv.CAP_PROP_BRIGHTNESS))
         self.ui.push_camera_brightness_reset.clicked.connect(partial(self.reset_camera_slider, self.ui.slider_camera_brightness, 128))
         self.ui.slider_camera_contrast.valueChanged.connect(partial(self.set_camera_prop_value, cv.CAP_PROP_CONTRAST))
@@ -87,12 +89,6 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.ui.push_camera_saturation_reset.clicked.connect(partial(self.reset_camera_slider, self.ui.slider_camera_saturation, 128))
         self.ui.slider_camera_sharpness.valueChanged.connect(partial(self.set_camera_prop_value, cv.CAP_PROP_SHARPNESS))
         self.ui.push_camera_sharpness_reset.clicked.connect(partial(self.reset_camera_slider, self.ui.slider_camera_sharpness, 128))
-
-        # self.ui.edit_camera_model_name = current_camera.model_name
-        # self.ui.spin_device_id.valueChanged.connect(self.change_device_id)
-
-        # self.ui.spin_exposure.valueChanged.connect(self.change_exposure)
-        # self.ui.spin_focus.valueChanged.connect(self.change_focus)
 
         self._ticker.tick.connect(self.tick)
 
