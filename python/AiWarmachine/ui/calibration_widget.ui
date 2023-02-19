@@ -1130,7 +1130,7 @@
             </size>
            </property>
            <property name="value">
-            <number>22</number>
+            <number>23</number>
            </property>
           </widget>
          </item>
@@ -1162,7 +1162,7 @@
             </size>
            </property>
            <property name="value">
-            <number>15</number>
+            <number>18</number>
            </property>
           </widget>
          </item>
@@ -1325,7 +1325,7 @@
             <x>0</x>
             <y>0</y>
             <width>621</width>
-            <height>737</height>
+            <height>735</height>
            </rect>
           </property>
           <property name="sizePolicy">
@@ -1380,14 +1380,28 @@
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="check_display_actual_resolution">
-         <property name="focusPolicy">
-          <enum>Qt::NoFocus</enum>
-         </property>
-         <property name="text">
-          <string>Display actual resolution</string>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <item>
+          <widget class="QCheckBox" name="check_display_actual_resolution">
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
+           <property name="text">
+            <string>Display actual resolution</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="check_display_undistorted">
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
+           <property name="text">
+            <string>Undistorted</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </item>
@@ -1416,7 +1430,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="push_top_view_image">
+        <widget class="QPushButton" name="push_calibration_image_top">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -1441,7 +1455,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="push_front_tilted_image">
+        <widget class="QPushButton" name="push_calibration_image_front">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -1466,7 +1480,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="push_side_tilted_image">
+        <widget class="QPushButton" name="push_calibration_image_side">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -1516,7 +1530,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="push_pose_image">
+        <widget class="QPushButton" name="push_calibration_image_pose">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -1608,7 +1622,6 @@
   <tabstop>double_thickness</tabstop>
   <tabstop>combo_units</tabstop>
   <tabstop>scroll_viewport</tabstop>
-  <tabstop>slider_camera_focus_2</tabstop>
  </tabstops>
  <resources/>
  <connections/>

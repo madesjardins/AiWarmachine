@@ -40,8 +40,11 @@ class Camera(QtCore.QObject):
         model_name="",
         device_id=0,
         capture_properties_dict=None,
-        int_mat=None,
-        dist_coeffs=None,
+        mtx=None,
+        mtx_prime=None,
+        dist=None,
+        mapx=None,
+        mapy=None,
         tvec=None,
         rvec=None,
         debug=False
@@ -64,17 +67,26 @@ class Camera(QtCore.QObject):
         :param capture_properties_dict: The capture properties dictionary. (None)
         :type capture_properties_dict: int
 
-        :param int_mat: Intrinsic camera matrix. (None)
-        :type int_mat: Numpy array 3x3
+        :param mtx: Intrinsic camera 3x3 matrix. (None)
+        :type mtx: :class:`numpy.ndarray`
 
-        :param dist_coeffs: Distortion Coefficients. (None)
-        :type dist_coeffs: Numpy array 1xX
+        :param mtx_prime: Optimal new intrinsic camera 3x3 matrix. (None)
+        :type mtx_prime: :class:`numpy.ndarray`
+
+        :param dist: Distortion Coefficients. (None)
+        :type dist: :class:`numpy.ndarray`
+
+        :param mapx: Undistort rectify map X. (None)
+        :type mapx: :class:`ndarray`
+
+        :param mapy: Undistort rectify map Y. (None)
+        :type mapy: :class:`ndarray`
 
         :param tvec: Translation vector. (None)
-        :type tvec: Numpy array 1x3
+        :type tvec: :class:`ndarray`
 
         :param rvec: Rodrigues rotation vector. (None)
-        :type rvec: Numpy Array 1x3
+        :type rvec: :class:`ndarray`
 
         :param debug: Whether or not to print debug messages. (False)
         :type debug: bool
@@ -87,8 +99,11 @@ class Camera(QtCore.QObject):
         self.debug = debug
 
         # calibration params
-        self._int_mat = int_mat
-        self._dist_coeffs = dist_coeffs
+        self._mtx = mtx
+        self._mtx_prime = mtx_prime
+        self._dist = dist
+        self._mapx = mapx
+        self._mapy = mapy
         self._tvec = tvec
         self._rvec = rvec
 
@@ -255,3 +270,53 @@ class Camera(QtCore.QObject):
         :rtype: bool
         """
         return self._camera_feed.isRunning()
+
+    def is_calibrated(self):
+        """Whether the camera is calibrated or not.
+
+        :return: True if camera is calibrated.
+        :rtype: bool
+        """
+        return (
+            self._mtx is not None and
+            self._dist is not None and
+            self._mtx_prime is not None and
+            self._roi is not None and
+            self._mapx is not None and
+            self._mapy is not None
+        )
+
+    def calibrate(self, checkerboard_3d_points_list, checkerboard_2d_points_list, image_resolution):
+        """Calculate and set camera matrix, ROI and mapping function to undistort images."""
+        ret, mtx, dist, rvecs, tvecs = cv.calibrateCamera(
+            checkerboard_3d_points_list,
+            checkerboard_2d_points_list,
+            image_resolution,
+            None,
+            None
+        )
+
+        if not ret:
+            raise RuntimeError("Unable to calibrate camera with these images.")
+
+        self._mtx = mtx
+        self._dist = dist
+        self._mtx_prime, self._roi = cv.getOptimalNewCameraMatrix(self._mtx, self._dist, image_resolution, 1, image_resolution)
+        self._mapx, self._mapy = cv.initUndistortRectifyMap(self._mtx, self._dist, None, self._mtx_prime, image_resolution, 5)
+
+        print(f"_mtx : {type(self._mtx)} : {self._mtx}")
+        print(f"_dist : {type(self._dist)} : {self._dist}")
+        print(f"_mtx_prime : {type(self._mtx_prime)} : {self._mtx_prime}")
+        print(f"_roi : {type(self._roi)} : {self._roi}")
+        print(f"_mapx : {type(self._mapx)} : {self._mapx}")
+        print(f"_mapy : {type(self._mapy)} : {self._mapy}")
+
+    def undistort(self, frame):
+        """Undistort image.
+
+        :param frame: The image.
+        :type frame: :class:`numpy.ndarray`
+        """
+        dst = cv.remap(frame, self._mapx, self._mapy, cv.INTER_CUBIC)
+        x, y, w, h = self._roi
+        return dst[y:y + h, x:x + w].copy()

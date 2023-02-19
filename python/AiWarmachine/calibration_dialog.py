@@ -15,7 +15,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 """Camera calibration dialog to setup your cameras."""
-import sys
+
 import os
 import traceback
 import re
@@ -23,6 +23,7 @@ from functools import partial
 
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import cv2 as cv
+import numpy
 
 from . import camera as aiw_camera
 from . import common as aiw_common
@@ -46,6 +47,14 @@ class CalibrationDialog(QtWidgets.QDialog):
         self._current_camera_id = -1
         self._ticker = aiw_tick.TickGenerator(30.0)
         self._disable_camera_settings_change = False
+        self._calibration_packages_dict = {
+            'top': None,
+            'front': None,
+            'side': None,
+            'pose': None
+        }
+        self._last_valid_calibration_pkg = None
+        self._in_calibration = False
 
         self._init_ui()
         self._init_connections()
@@ -90,6 +99,12 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.ui.slider_camera_sharpness.valueChanged.connect(partial(self.set_camera_prop_value, cv.CAP_PROP_SHARPNESS))
         self.ui.push_camera_sharpness_reset.clicked.connect(partial(self.reset_camera_slider, self.ui.slider_camera_sharpness, 128))
 
+        # calibration
+        self.ui.push_calibration_image_top.clicked.connect(partial(self.trigger_calibration_image, "top"))
+        self.ui.push_calibration_image_front.clicked.connect(partial(self.trigger_calibration_image, "front"))
+        self.ui.push_calibration_image_side.clicked.connect(partial(self.trigger_calibration_image, "side"))
+        self.ui.push_calibration_image_pose.clicked.connect(partial(self.trigger_calibration_image, "pose"))
+        self.ui.push_calibrate.clicked.connect(self.calibrate)
         self._ticker.tick.connect(self.tick)
 
     def update_current_camera_item_label(self):
@@ -231,6 +246,26 @@ class CalibrationDialog(QtWidgets.QDialog):
 
         else:
             self._animation_frame = 0
+
+            if self._in_calibration:
+                gray = cv.cvtColor(camera_frame, cv.COLOR_BGR2GRAY)
+
+                checkerboard_dim = (
+                    self.ui.spin_number_of_squares_w.value() - 1,
+                    self.ui.spin_number_of_squares_h.value() - 1
+                )
+                ret, corners = cv.findChessboardCorners(gray, checkerboard_dim, flags=cv.CALIB_CB_FAST_CHECK)
+                if ret:
+                    self._last_valid_calibration_pkg = gray, corners
+                    camera_frame = cv.drawChessboardCorners(
+                        cv.cvtColor(gray, cv.COLOR_GRAY2BGR),
+                        checkerboard_dim,
+                        corners,
+                        ret
+                    )
+            elif self.ui.check_display_undistorted.isChecked() and current_camera.is_calibrated():
+                camera_frame = current_camera.undistort(camera_frame)
+
             image = QtGui.QImage(
                 camera_frame,
                 camera_frame.shape[1],
@@ -396,3 +431,122 @@ class CalibrationDialog(QtWidgets.QDialog):
         :type default_value: int
         """
         slider.setValue(default_value)
+
+    @QtCore.pyqtSlot(str)
+    def trigger_calibration_image(self, view_name):
+        """Trigger the countdown to take a calibration image.
+
+        :param view_name: The name of the view, choices are: ['top', 'front', 'side', 'pose'].
+        :type view_name: str
+        """
+        self._last_valid_calibration_pkg = None
+        self._in_calibration = True
+        QtCore.QTimer.singleShot(3000, partial(self.set_calibration_image, view_name))
+
+    @QtCore.pyqtSlot(str)
+    def set_calibration_image(self, view_name):
+        """Set a calibration image.
+
+        :param view_name: The name of the view, choices are: ['top', 'front', 'side', 'pose'].
+        :type view_name: str
+        """
+        self._in_calibration = False
+        if self._last_valid_calibration_pkg is not None:
+            self._calibration_packages_dict[view_name] = self._last_valid_calibration_pkg
+            self._last_valid_calibration_pkg = None
+
+            push_button = getattr(self.ui, f"push_calibration_image_{view_name}")
+            push_button.setText("")
+            frame_gray, _ = self._calibration_packages_dict[view_name]
+            frame = cv.cvtColor(frame_gray, cv.COLOR_GRAY2BGR)
+
+            image = QtGui.QImage(
+                frame,
+                frame.shape[1],
+                frame.shape[0],
+                frame.strides[0],
+                QtGui.QImage.Format.Format_BGR888
+            )
+            pix = QtGui.QPixmap.fromImage(
+                image.scaled(
+                    push_button.width() - 10,
+                    push_button.height() - 10,
+                    aspectRatioMode=QtCore.Qt.AspectRatioMode.KeepAspectRatio
+                )
+            )
+            push_button.setIcon(QtGui.QIcon(pix))
+            push_button.setIconSize(pix.rect().size())
+
+    @QtCore.pyqtSlot()
+    def calibrate(self):
+        """Calibrate the camera using the top, front and side views."""
+        current_camera = self._cameras_dict.get(self._current_camera_id)
+        if current_camera is None:
+            print("No current camera")
+            return
+
+        checkerboard_3d_reference_points_array = self.get_checkerboard_3d_reference_points()
+        checkerboard_3d_points_list = []
+        checkerboard_2d_points_list = []
+        image_resolution = None
+        for view_name in ['top', 'front', 'side']:
+            frame_gray, corners = self._calibration_packages_dict[view_name]
+            image_resolution = frame_gray.shape[::-1]
+            corners2 = cv.cornerSubPix(
+                frame_gray,
+                corners,
+                (11, 11),
+                (-1, -1),
+                aiw_constants.CRITERIA
+            )
+
+            checkerboard_3d_points_list.append(checkerboard_3d_reference_points_array)
+            checkerboard_2d_points_list.append(corners2)
+
+        try:
+            current_camera.calibrate(
+                checkerboard_3d_points_list,
+                checkerboard_2d_points_list,
+                image_resolution
+            )
+        except Exception:
+            traceback.print_exc()
+
+    def get_checkerboard_3d_reference_points(self, calibration=True):
+        """Get checkboard 3D reference points.
+
+        :param planar: If set to True, will return planar coordinates for camera calibration. (True)
+        :type planar: bool
+
+        :return: Array of reference points.
+        :rtype: :class:`numpy.ndarray` of :class:`numpy.ndarray`
+        """
+        square_length = self.ui.double_length_of_square.value()
+        checkerboard_thickness = self.ui.double_thickness.value()
+        if self.ui.combo_units.currentText() == "Centimeters":
+            square_length = aiw_common.cmToIn(square_length)
+            checkerboard_thickness = aiw_common.cmToIn(checkerboard_thickness)
+
+        dim_x = self.ui.spin_number_of_squares_w.value() - 1
+        dim_x_2 = int(dim_x / 2)
+        dim_z = self.ui.spin_number_of_squares_h.value() - 1
+        dim_z_2 = int(dim_z / 2)
+
+        checkerboard_ref_points = []
+
+        for z in range(dim_z):
+            for x in range(dim_x):
+                if calibration:
+                    checkerboard_ref_points.append([
+                        (x - dim_x_2) * square_length,
+                        (z - dim_z_2) * square_length,
+                        0.0
+                    ])
+                else:
+                    checkerboard_ref_points.append([
+                        (x - dim_x_2) * square_length,
+                        checkerboard_thickness,
+                        (z - dim_z_2) * square_length
+                    ])
+
+        return numpy.array(checkerboard_ref_points, numpy.float32)
