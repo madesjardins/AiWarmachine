@@ -286,11 +286,36 @@ class Camera(QtCore.QObject):
             self._mapy is not None
         )
 
-    def calibrate(self, checkerboard_3d_points_list, checkerboard_2d_points_list, image_resolution):
-        """Calculate and set camera matrix, ROI and mapping function to undistort images."""
-        ret, mtx, dist, rvecs, tvecs = cv.calibrateCamera(
-            checkerboard_3d_points_list,
-            checkerboard_2d_points_list,
+    def is_posed(self):
+        """Whether the camera is calibrated and posed.
+
+        :return: True if camera is calibrated and posed.
+        :rtype: bool
+        """
+        return (
+            self.is_calibrated and
+            self._rvec is not None and
+            self._tvec is not None
+        )
+
+    def calibrate(self, checkerboard_3d_points_3_list, checkerboard_2d_points_3_list, image_resolution):
+        """Calculate and set camera matrix, ROI and mapping function to undistort images.
+
+        :param checkerboard_3d_points_3_list: Three lists (one for each calibration view) of array of 3d points.
+        :type checkerboard_3d_points_3_list: list of :class:`numpy.ndarray`
+
+        :param checkerboard_2d_points_3_list: Three lists (one for each calibration view) of array of corresponding 2d points.
+        :type checkerboard_2d_points_3_list: list of :class:`numpy.ndarray`
+
+        :param image_resolution: The image resolution as (width, height).
+        :type image_resolution: tupple of int
+
+        :return: Mean reprojection error.
+        :rtype: float
+        """
+        ret, mtx, dist, rvecs_list, tvecs_list = cv.calibrateCamera(
+            checkerboard_3d_points_3_list,
+            checkerboard_2d_points_3_list,
             image_resolution,
             None,
             None
@@ -304,12 +329,13 @@ class Camera(QtCore.QObject):
         self._mtx_prime, self._roi = cv.getOptimalNewCameraMatrix(self._mtx, self._dist, image_resolution, 1, image_resolution)
         self._mapx, self._mapy = cv.initUndistortRectifyMap(self._mtx, self._dist, None, self._mtx_prime, image_resolution, 5)
 
-        print(f"_mtx : {type(self._mtx)} : {self._mtx}")
-        print(f"_dist : {type(self._dist)} : {self._dist}")
-        print(f"_mtx_prime : {type(self._mtx_prime)} : {self._mtx_prime}")
-        print(f"_roi : {type(self._roi)} : {self._roi}")
-        print(f"_mapx : {type(self._mapx)} : {self._mapx}")
-        print(f"_mapy : {type(self._mapy)} : {self._mapy}")
+        mean_error = 0
+        for i in range(len(checkerboard_3d_points_3_list)):
+            projected_2d_points_array, _ = cv.projectPoints(checkerboard_3d_points_3_list[i], rvecs_list[i], tvecs_list[i], mtx, dist)
+            error = cv.norm(checkerboard_2d_points_3_list[i], projected_2d_points_array, cv.NORM_L2) / len(projected_2d_points_array)
+            mean_error += error
+
+        return mean_error / len(checkerboard_3d_points_3_list)
 
     def undistort(self, frame):
         """Undistort image.
@@ -320,3 +346,57 @@ class Camera(QtCore.QObject):
         dst = cv.remap(frame, self._mapx, self._mapy, cv.INTER_CUBIC)
         x, y, w, h = self._roi
         return dst[y:y + h, x:x + w].copy()
+
+    def pose(self, checkerboard_3d_points_list, checkerboard_2d_points_list):
+        """Calculate the pose of the camera for a frame.
+
+        :param checkerboard_3d_points_3_list: Array of 3d points.
+        :type checkerboard_3d_points_3_list: :class:`numpy.ndarray`
+
+        :param checkerboard_2d_points_3_list: Array of corresponding 2d points.
+        :type checkerboard_2d_points_3_list: :class:`numpy.ndarray`
+        """
+        ret, rvec, tvec = cv.solvePnP(
+            checkerboard_3d_points_list,
+            checkerboard_2d_points_list,
+            self._mtx,
+            self._dist
+        )
+        if not ret:
+            raise RuntimeError("Unable to determine camera pose.")
+
+        self._rvec = rvec
+        self._tvec = tvec
+
+        print(f"Translation : {list(self._tvec)}\nRotation : {list(self._rvec)}")
+
+    def project_points(self, points_array, undistorted=False, as_integers=False):
+        """Project 3d points into 2d image space.
+
+        :param points_array: Array of 3d points.
+        :type points_array: :class:`numpy.ndarray`
+
+        :param undistorted: Whether or not to return 2d coordinates of the undistorted image. (False)
+        :type undistorted: bool
+
+        :param as_integers: Whether or not to convert to int instead of float. (False)
+        :type as_integers: bool
+        """
+        projected_2d_points_array, _ = cv.projectPoints(
+            points_array,
+            self._rvec,
+            self._tvec,
+            self._mtx_prime if undistorted else self._mtx,
+            self._dist
+        )
+
+        if undistorted:
+            x, y, _, _ = self._roi
+            for index in range(len(projected_2d_points_array)):
+                projected_2d_points_array[index][0][0] -= x
+                projected_2d_points_array[index][0][1] -= y
+
+        if as_integers:
+            return (np.rint(projected_2d_points_array)).astype(int)
+        else:
+            return projected_2d_points_array

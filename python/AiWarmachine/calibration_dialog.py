@@ -23,7 +23,7 @@ from functools import partial
 
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import cv2 as cv
-import numpy
+import numpy as np
 
 from . import camera as aiw_camera
 from . import common as aiw_common
@@ -105,6 +105,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.ui.push_calibration_image_side.clicked.connect(partial(self.trigger_calibration_image, "side"))
         self.ui.push_calibration_image_pose.clicked.connect(partial(self.trigger_calibration_image, "pose"))
         self.ui.push_calibrate.clicked.connect(self.calibrate)
+        self.ui.push_pose.clicked.connect(self.pose)
         self._ticker.tick.connect(self.tick)
 
     def update_current_camera_item_label(self):
@@ -263,8 +264,32 @@ class CalibrationDialog(QtWidgets.QDialog):
                         corners,
                         ret
                     )
-            elif self.ui.check_display_undistorted.isChecked() and current_camera.is_calibrated():
-                camera_frame = current_camera.undistort(camera_frame)
+            elif current_camera.is_calibrated():
+                do_undistort = self.ui.check_display_undistorted.isChecked()
+                if do_undistort:
+                    camera_frame = current_camera.undistort(camera_frame)
+
+                if current_camera.is_posed():
+                    square_length = self.ui.double_length_of_square.value()
+                    checkerboard_thickness = self.ui.double_thickness.value()
+                    if self.ui.combo_units.currentText() == "Centimeters":
+                        square_length = aiw_common.cmToIn(square_length)
+                        checkerboard_thickness = aiw_common.cmToIn(checkerboard_thickness)
+
+                    # Draw axes on the checkerboard for easy verification
+                    axes = np.float32(
+                        [
+                            [0, 0, checkerboard_thickness],
+                            [5.0 * square_length, 0, checkerboard_thickness],
+                            [0, 5.0 * square_length, checkerboard_thickness],
+                            [0, 0, 5.0 * square_length + checkerboard_thickness]
+                        ]
+                    ).reshape(-1, 3)
+                    projected_points = current_camera.project_points(axes, do_undistort, as_integers=True)
+                    origin = projected_points[0].ravel()
+                    camera_frame = cv.line(camera_frame, origin, projected_points[1].ravel(), (0, 0, 255), 2)
+                    camera_frame = cv.line(camera_frame, origin, projected_points[2].ravel(), (0, 255, 0), 2)
+                    camera_frame = cv.line(camera_frame, origin, projected_points[3].ravel(), (255, 0, 0), 2)
 
             image = QtGui.QImage(
                 camera_frame,
@@ -485,7 +510,7 @@ class CalibrationDialog(QtWidgets.QDialog):
             print("No current camera")
             return
 
-        checkerboard_3d_reference_points_array = self.get_checkerboard_3d_reference_points()
+        checkerboard_3d_reference_points_array = self.get_checkerboard_3d_reference_points(use_checkerboard_thickness=False)
         checkerboard_3d_points_list = []
         checkerboard_2d_points_list = []
         image_resolution = None
@@ -504,22 +529,53 @@ class CalibrationDialog(QtWidgets.QDialog):
             checkerboard_2d_points_list.append(corners2)
 
         try:
-            current_camera.calibrate(
+            mean_error = current_camera.calibrate(
                 checkerboard_3d_points_list,
                 checkerboard_2d_points_list,
                 image_resolution
             )
+            print(f"Calibration error: {mean_error}")
         except Exception:
             traceback.print_exc()
 
-    def get_checkerboard_3d_reference_points(self, calibration=True):
+    @QtCore.pyqtSlot()
+    def pose(self):
+        """Calculate camera pose using pose view."""
+        current_camera = self._cameras_dict.get(self._current_camera_id)
+        if current_camera is None:
+            print("No current camera")
+            return
+        elif not current_camera.is_calibrated():
+            print("Current camera is not calibrated.")
+            return
+
+        frame_gray, corners = self._calibration_packages_dict["pose"]
+        corners2 = cv.cornerSubPix(
+            frame_gray,
+            corners,
+            (11, 11),
+            (-1, -1),
+            aiw_constants.CRITERIA
+        )
+        checkerboard_3d_reference_points_array = self.get_checkerboard_3d_reference_points(use_checkerboard_thickness=True)
+        try:
+            current_camera.pose(
+                checkerboard_3d_reference_points_array,
+                corners2
+            )
+        except Exception:
+            traceback.print_exc()
+
+    def get_checkerboard_3d_reference_points(self, use_checkerboard_thickness=True):
         """Get checkboard 3D reference points.
 
-        :param planar: If set to True, will return planar coordinates for camera calibration. (True)
-        :type planar: bool
+        :param use_checkerboard_thickness: If set to True, will return checkerboard thickness for z values instead of 0.0. (True)
+        :type use_checkerboard_thickness: bool
+
+            .. note:: This should be set to False when calibrating and True when determining camera pose.
 
         :return: Array of reference points.
-        :rtype: :class:`numpy.ndarray` of :class:`numpy.ndarray`
+        :rtype: :class:`np.ndarray`
         """
         square_length = self.ui.double_length_of_square.value()
         checkerboard_thickness = self.ui.double_thickness.value()
@@ -529,24 +585,17 @@ class CalibrationDialog(QtWidgets.QDialog):
 
         dim_x = self.ui.spin_number_of_squares_w.value() - 1
         dim_x_2 = int(dim_x / 2)
-        dim_z = self.ui.spin_number_of_squares_h.value() - 1
-        dim_z_2 = int(dim_z / 2)
+        dim_y = self.ui.spin_number_of_squares_h.value() - 1
+        dim_y_2 = int(dim_y / 2)
 
         checkerboard_ref_points = []
 
-        for z in range(dim_z):
+        for y in range(dim_y - 1, -1, -1):
             for x in range(dim_x):
-                if calibration:
-                    checkerboard_ref_points.append([
-                        (x - dim_x_2) * square_length,
-                        (z - dim_z_2) * square_length,
-                        0.0
-                    ])
-                else:
-                    checkerboard_ref_points.append([
-                        (x - dim_x_2) * square_length,
-                        checkerboard_thickness,
-                        (z - dim_z_2) * square_length
-                    ])
+                checkerboard_ref_points.append([
+                    (x - dim_x_2) * square_length,
+                    (y - dim_y_2) * square_length,
+                    checkerboard_thickness if use_checkerboard_thickness else 0.0
+                ])
 
-        return numpy.array(checkerboard_ref_points, numpy.float32)
+        return np.array(checkerboard_ref_points, np.float32)
