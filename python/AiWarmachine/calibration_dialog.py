@@ -25,10 +25,10 @@ from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import cv2 as cv
 import numpy as np
 
-from . import camera as aiw_camera
-from . import common as aiw_common
-from . import constants as aiw_constants
-from . import tick_generator as aiw_tick
+from . import camera
+from . import common
+from . import constants
+from . import tick_generator
 
 
 class CalibrationDialog(QtWidgets.QDialog):
@@ -45,7 +45,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         self._animation_frame = 0
         self._cameras_dict = {}
         self._current_camera_id = -1
-        self._ticker = aiw_tick.TickGenerator(30.0)
+        self._ticker = tick_generator.TickGenerator(30.0)
         self._disable_camera_settings_change = False
         self._calibration_packages_dict = {
             'top': None,
@@ -77,6 +77,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.ui.push_add_camera.clicked.connect(self.add_camera)
         self.ui.push_delete_camera.clicked.connect(self.delete_camera)
         self.ui.list_cameras.itemSelectionChanged.connect(self.set_viewport_to_selected)
+        self.ui.push_save_camera.clicked.connect(self.save)
 
         # camera settings
         self.ui.edit_camera_name.textEdited.connect(self.set_current_camera_name)
@@ -106,6 +107,13 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.ui.push_calibration_image_pose.clicked.connect(partial(self.trigger_calibration_image, "pose"))
         self.ui.push_calibrate.clicked.connect(self.calibrate)
         self.ui.push_pose.clicked.connect(self.pose)
+
+        # table offset
+        self.ui.double_table_t_x.valueChanged.connect(self.update_table_offset_in_camera)
+        self.ui.double_table_t_y.valueChanged.connect(self.update_table_offset_in_camera)
+        self.ui.double_table_t_z.valueChanged.connect(self.update_table_offset_in_camera)
+
+        # tick
         self._ticker.tick.connect(self.tick)
 
     def update_current_camera_item_label(self):
@@ -192,7 +200,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         cast_class = int
         if as_list_of_str:
             cast_class = str
-        return [cast_class(_i) for _i in aiw_constants.DEFAULT_DEVICE_IDS_LIST if _i not in self._cameras_dict]
+        return [cast_class(_i) for _i in constants.DEFAULT_DEVICE_IDS_LIST if _i not in self._cameras_dict]
 
     @QtCore.pyqtSlot(QtGui.QCloseEvent)
     def closeEvent(self, a0):
@@ -200,8 +208,8 @@ class CalibrationDialog(QtWidgets.QDialog):
         try:
             self._ticker.stop()
             self._ticker.wait()
-            for _, camera in self._cameras_dict.items():
-                camera.release()
+            for _, camera_obj in self._cameras_dict.items():
+                camera_obj.release()
         except Exception:
             traceback.print_exc()
         return super().closeEvent(a0)
@@ -235,7 +243,7 @@ class CalibrationDialog(QtWidgets.QDialog):
 
         camera_frame, info_str = current_camera.get_frame(return_info=True)
         if camera_frame is None:
-            frame = aiw_common.get_frame_with_text("Please wait" + "." * (int(self._animation_frame / 30) % 4))
+            frame = common.get_frame_with_text("Please wait" + "." * (int(self._animation_frame / 30) % 4))
             image = QtGui.QImage(
                 frame,
                 frame.shape[1],
@@ -273,8 +281,8 @@ class CalibrationDialog(QtWidgets.QDialog):
                     square_length = self.ui.double_length_of_square.value()
                     checkerboard_thickness = self.ui.double_thickness.value()
                     if self.ui.combo_units.currentText() == "Centimeters":
-                        square_length = aiw_common.cmToIn(square_length)
-                        checkerboard_thickness = aiw_common.cmToIn(checkerboard_thickness)
+                        square_length = common.cmToIn(square_length)
+                        checkerboard_thickness = common.cmToIn(checkerboard_thickness)
 
                     # Draw axes on the checkerboard for easy verification
                     axes = np.float32(
@@ -350,9 +358,9 @@ class CalibrationDialog(QtWidgets.QDialog):
         """Set the viewport to the selected camera in the list."""
         self.pause_ticker()
         if (device_id := self.get_selected_device_id()) is not None:
-            if (camera := self._cameras_dict.get(device_id)) is not None:
-                if not camera.is_running():
-                    camera.start()
+            if (camera_obj := self._cameras_dict.get(device_id)) is not None:
+                if not camera_obj.is_running():
+                    camera_obj.start()
                 self._current_camera_id = device_id
                 self.start_ticker()
                 self.fill_current_camera_settings()
@@ -366,7 +374,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         """Add a new camera to the list."""
         available_device_ids_list = self.get_available_device_ids_list(as_list_of_str=True)
         if not available_device_ids_list:
-            aiw_common.message_box(
+            common.message_box(
                 title="Add Camera",
                 text="Unable to add a new camera.",
                 info_text="No device id available.",
@@ -389,7 +397,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         device_id = int(device_id_str)
 
         # create the camera objects
-        new_camera = aiw_camera.Camera(device_id=device_id, debug=True)
+        new_camera = camera.Camera(device_id=device_id, debug=True)
         self._cameras_dict[device_id] = new_camera
 
         # add to list
@@ -404,8 +412,8 @@ class CalibrationDialog(QtWidgets.QDialog):
         try:
             self.pause_ticker()
             if (device_id := self.get_selected_device_id()) is not None:
-                if (camera := self._cameras_dict.get(device_id)) is not None:
-                    camera.release()
+                if (camera_obj := self._cameras_dict.get(device_id)) is not None:
+                    camera_obj.release()
                     self._current_camera_id = -1
                     del self._cameras_dict[device_id]
                 self.ui.list_cameras.takeItem(self.ui.list_cameras.currentRow())
@@ -522,7 +530,7 @@ class CalibrationDialog(QtWidgets.QDialog):
                 corners,
                 (11, 11),
                 (-1, -1),
-                aiw_constants.CRITERIA
+                constants.CRITERIA
             )
 
             checkerboard_3d_points_list.append(checkerboard_3d_reference_points_array)
@@ -555,7 +563,7 @@ class CalibrationDialog(QtWidgets.QDialog):
             corners,
             (11, 11),
             (-1, -1),
-            aiw_constants.CRITERIA
+            constants.CRITERIA
         )
         checkerboard_3d_reference_points_array = self.get_checkerboard_3d_reference_points(use_checkerboard_thickness=True)
         try:
@@ -580,8 +588,8 @@ class CalibrationDialog(QtWidgets.QDialog):
         square_length = self.ui.double_length_of_square.value()
         checkerboard_thickness = self.ui.double_thickness.value()
         if self.ui.combo_units.currentText() == "Centimeters":
-            square_length = aiw_common.cmToIn(square_length)
-            checkerboard_thickness = aiw_common.cmToIn(checkerboard_thickness)
+            square_length = common.cmToIn(square_length)
+            checkerboard_thickness = common.cmToIn(checkerboard_thickness)
 
         dim_x = self.ui.spin_number_of_squares_w.value() - 1
         dim_x_2 = int(dim_x / 2)
@@ -599,3 +607,36 @@ class CalibrationDialog(QtWidgets.QDialog):
                 ])
 
         return np.array(checkerboard_ref_points, np.float32)
+
+    @QtCore.pyqtSlot()
+    def save(self):
+        """Save the current camera settings and calibration in the default calibration folder."""
+        error_message = ""
+        if (current_camera := self.get_current_camera()) is not None:
+            try:
+                filepath = current_camera.save()
+                print(f"Current camera saved to : '{filepath}'")
+            except Exception as err:
+                error_message = str(err)
+
+        else:
+            error_message = "No current camera selected."
+
+        if error_message:
+            common.message_box(
+                title="Error",
+                text="Unable to save camera settings and calibration.",
+                info_text=error_message,
+                icon_name="Critical",
+                button_names_list=["Close"]
+            )
+
+    @QtCore.pyqtSlot(float)
+    def update_table_offset_in_camera(self, _):
+        """Update the table offset translation in camera based on values in the ui."""
+        if (current_camera := self.get_current_camera()) is not None:
+            current_camera.set_table_offset(
+                x=self.ui.double_table_t_x.value(),
+                y=self.ui.double_table_t_y.value(),
+                z=self.ui.double_table_t_z.value()
+            )

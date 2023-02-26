@@ -16,11 +16,14 @@
 #
 """common functions."""
 
+import os
+import re
+
 from PyQt6 import QtWidgets
 import cv2 as cv
 import numpy as np
 
-from . import constants as aiw_constants
+from . import constants as constants
 
 
 def cmToIn(value):
@@ -146,18 +149,18 @@ def message_box(
         msg_dial.setInformativeText(info_text)
     if details_text:
         msg_dial.setDetailedText(details_text)
-    if (icon_obj := aiw_constants.MESSAGE_BOX_ICON_NAME_TO_OBJECT_DICT.get(icon_name, None)) is not None:
+    if (icon_obj := constants.MESSAGE_BOX_ICON_NAME_TO_OBJECT_DICT.get(icon_name, None)) is not None:
         msg_dial.setIcon(icon_obj)
     else:
-        msg_dial.setIcon(aiw_constants.MESSAGE_BOX_ICON_NAME_TO_OBJECT_DICT["NoIcon"])
+        msg_dial.setIcon(constants.MESSAGE_BOX_ICON_NAME_TO_OBJECT_DICT["NoIcon"])
 
     valid_button_objs_list = [
         _button_obj
         for _button_name in button_names_list
-        if (_button_obj := aiw_constants.MESSAGE_BOX_BUTTON_NAME_TO_OBJECT_DICT.get(_button_name, None)) is not None
+        if (_button_obj := constants.MESSAGE_BOX_BUTTON_NAME_TO_OBJECT_DICT.get(_button_name, None)) is not None
     ]
     if not valid_button_objs_list:
-        valid_button_objs_list = [aiw_constants.MESSAGE_BOX_BUTTON_NAME_TO_OBJECT_DICT["Close"]]
+        valid_button_objs_list = [constants.MESSAGE_BOX_BUTTON_NAME_TO_OBJECT_DICT["Close"]]
 
     buttons_flag = valid_button_objs_list[0]
     if len(valid_button_objs_list) > 1:
@@ -165,8 +168,9 @@ def message_box(
             buttons_flag = buttons_flag | button_obj
 
     msg_dial.setStandardButtons(buttons_flag)
-
-    return find_key_for_value_in_dict(msg_dial.exec(), aiw_constants.MESSAGE_BOX_BUTTON_NAME_TO_OBJECT_DICT)
+    ret_value = find_key_for_value_in_dict(msg_dial.exec(), constants.MESSAGE_BOX_BUTTON_NAME_TO_OBJECT_DICT)
+    msg_dial.deleteLater()
+    return ret_value
 
 
 def find_key_for_value_in_dict(value, dictionary, default=None):
@@ -188,3 +192,39 @@ def find_key_for_value_in_dict(value, dictionary, default=None):
         if v == value:
             return k
     return default
+
+
+def get_capture_property_id(property_name):
+    """Get the capture property id from name.
+
+    :param property_name: The name of the property.
+    :type property_name: str
+
+    :return: The property id.
+    :rtype: int
+    """
+    return find_key_for_value_in_dict(
+        property_name,
+        constants.CAPTURE_PROPERTIES_NAMES_DICT
+    )
+
+
+def get_aiwarmachine_root_dir():
+    """Get the AiWarmachine root directory.
+
+    :return: The directory path.
+    :rtype: str
+    """
+    return re.sub("/[^/]+/\\.\\./.*$", "", os.getenv('AIWARMACHINE_PYTHON_DIR').replace("\\", "/"))
+
+
+def get_calibration_dir():
+    """Get the calibration directory and create it if it does not exist.
+
+    :return: The directory path.
+    :rtype: str
+    """
+    calibration_dir = f"{get_aiwarmachine_root_dir()}/calibration"
+    if not os.path.exists(calibration_dir):
+        os.makedirs(calibration_dir)
+    return calibration_dir

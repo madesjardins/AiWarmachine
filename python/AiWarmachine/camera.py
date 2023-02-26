@@ -22,6 +22,8 @@ You can then call get_frame() to get the latest frame available.
 
 import copy
 import time
+import json
+import re
 
 from PyQt6 import QtCore
 import numpy as np
@@ -29,6 +31,7 @@ import cv2 as cv
 
 from . import constants
 from . import camera_feed
+from . import common
 
 
 class Camera(QtCore.QObject):
@@ -41,12 +44,12 @@ class Camera(QtCore.QObject):
         device_id=0,
         capture_properties_dict=None,
         mtx=None,
-        mtx_prime=None,
         dist=None,
-        mapx=None,
-        mapy=None,
+        mtx_prime=None,
+        roi=None,
         tvec=None,
         rvec=None,
+        table_offset_tvec=None,
         debug=False
     ):
         """Initialize.
@@ -70,23 +73,22 @@ class Camera(QtCore.QObject):
         :param mtx: Intrinsic camera 3x3 matrix. (None)
         :type mtx: :class:`numpy.ndarray`
 
-        :param mtx_prime: Optimal new intrinsic camera 3x3 matrix. (None)
-        :type mtx_prime: :class:`numpy.ndarray`
-
         :param dist: Distortion Coefficients. (None)
         :type dist: :class:`numpy.ndarray`
 
-        :param mapx: Undistort rectify map X. (None)
-        :type mapx: :class:`ndarray`
+        :param mtx_prime: Optimal new intrinsic camera 3x3 matrix. (None)
+        :type mtx_prime: :class:`numpy.ndarray`
 
-        :param mapy: Undistort rectify map Y. (None)
-        :type mapy: :class:`ndarray`
+        :param roi: Region of interest when using undistorted image and prime matrix. (None)
+        :type roi: tuple of int
 
         :param tvec: Translation vector. (None)
         :type tvec: :class:`ndarray`
 
         :param rvec: Rodrigues rotation vector. (None)
         :type rvec: :class:`ndarray`
+
+        :param
 
         :param debug: Whether or not to print debug messages. (False)
         :type debug: bool
@@ -100,12 +102,14 @@ class Camera(QtCore.QObject):
 
         # calibration params
         self._mtx = mtx
-        self._mtx_prime = mtx_prime
         self._dist = dist
-        self._mapx = mapx
-        self._mapy = mapy
+        self._mtx_prime = mtx_prime
+        self._roi = roi
         self._tvec = tvec
         self._rvec = rvec
+        self._table_offset_tvec = table_offset_tvec
+        if self._table_offset_tvec is None:
+            self._table_offset_tvec = np.array([[0], [0], [0]], np.float32)
 
         # camera feed
         self._device_id = device_id
@@ -114,6 +118,16 @@ class Camera(QtCore.QObject):
         self._capture_properties_dict = capture_properties_dict
         self._camera_feed = camera_feed.CameraFeed(self, debug=self.debug)
         self._camera_feed.frame_grabbed.connect(self.new_frame)
+
+        if self._mtx is not None and self._mtx_prime is not None and self._roi is not None:
+            image_resolution = (
+                self._capture_properties_dict.get(common.get_capture_property_id("Width"), constants.DEFAULT_CAPTURE_WIDTH),
+                self._capture_properties_dict.get(common.get_capture_property_id("Height"), constants.DEFAULT_CAPTURE_HEIGHT)
+            )
+            self._mapx, self._mapy = cv.initUndistortRectifyMap(self._mtx, self._dist, None, self._mtx_prime, image_resolution, 5)
+        else:
+            self._mapx = None
+            self._mapy = None
 
         # frame buffer
         self._reset_framebuffer()
@@ -295,7 +309,8 @@ class Camera(QtCore.QObject):
         return (
             self.is_calibrated and
             self._rvec is not None and
-            self._tvec is not None
+            self._tvec is not None and
+            self._table_offset_tvec is not None
         )
 
     def calibrate(self, checkerboard_3d_points_3_list, checkerboard_2d_points_3_list, image_resolution):
@@ -328,7 +343,6 @@ class Camera(QtCore.QObject):
         self._dist = dist
         self._mtx_prime, self._roi = cv.getOptimalNewCameraMatrix(self._mtx, self._dist, image_resolution, 1, image_resolution)
         self._mapx, self._mapy = cv.initUndistortRectifyMap(self._mtx, self._dist, None, self._mtx_prime, image_resolution, 5)
-
         mean_error = 0
         for i in range(len(checkerboard_3d_points_3_list)):
             projected_2d_points_array, _ = cv.projectPoints(checkerboard_3d_points_3_list[i], rvecs_list[i], tvecs_list[i], mtx, dist)
@@ -382,10 +396,11 @@ class Camera(QtCore.QObject):
         :param as_integers: Whether or not to convert to int instead of float. (False)
         :type as_integers: bool
         """
+        tvec = self._tvec - self._table_offset_tvec
         projected_2d_points_array, _ = cv.projectPoints(
             points_array,
             self._rvec,
-            self._tvec,
+            tvec,
             self._mtx_prime if undistorted else self._mtx,
             self._dist
         )
@@ -400,3 +415,58 @@ class Camera(QtCore.QObject):
             return (np.rint(projected_2d_points_array)).astype(int)
         else:
             return projected_2d_points_array
+
+    def set_table_offset(self, x, y, z):
+        """Set the table offset translation vector.
+
+        :param x: X.
+        :type x: float
+
+        :param y: Y.
+        :type y: float
+
+        :param z: Z.
+        :type z: float
+        """
+        self._table_offset_tvec = np.array([[x], [y], [z]], np.float32)
+
+    def save(self):
+        """Save the current camera settings and calibration.
+
+        :return: Filepath.
+        :rtype: str
+
+        :raise: RuntimeError if camera does not have a name.
+        """
+        if not self.name:
+            raise RuntimeError("Camera does not have a name.")
+
+        capture_properties_dict = self.get_capture_properties_copy()
+        capture_width = capture_properties_dict.get(common.get_capture_property_id("Width"))
+        capture_height = capture_properties_dict.get(common.get_capture_property_id("Height"))
+        capture_zoom = capture_properties_dict.get(common.get_capture_property_id("Zoom"))
+        capture_focus = capture_properties_dict.get(common.get_capture_property_id("Focus"))
+
+        calibration_dir = common.get_calibration_dir()
+        name = re.sub('[^a-zA-Z0-9]', '_', self.name)
+        calibration_filename = f"{name}__{capture_width}x{capture_height}__z{capture_zoom}__f{capture_focus}.json"
+        calibration_filepath = f"{calibration_dir}/{calibration_filename}"
+
+        data = {
+            'name': self.name,
+            'device_id': self.device_id,
+            'model_name': self.model_name,
+            'capture_properties_dict': capture_properties_dict,
+            'mtx': self._mtx.tolist() if self._mtx is not None else None,
+            'dist': self._dist.tolist() if self._dist is not None else None,
+            'mtx_prime': self._mtx_prime.tolist() if self._mtx_prime is not None else None,
+            'roi': self._roi,
+            'tvec': self._tvec.tolist() if self._tvec is not None else None,
+            'rvec': self._rvec.tolist() if self._rvec is not None else None,
+            'table_offset_tvec': self._table_offset_tvec.tolist() if self._table_offset_tvec is not None else None,
+
+        }
+        with open(calibration_filepath, 'w') as fid:
+            fid.write(json.dumps(data, indent=2))
+
+        return calibration_filepath

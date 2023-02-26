@@ -19,8 +19,8 @@ import sys
 
 from PyQt6 import QtWidgets
 
-from AiWarmachine import calibration_dialog as aiw_calib
+from AiWarmachine import calibration_dialog
 
 app = QtWidgets.QApplication(sys.argv)
-my_dial = aiw_calib.CalibrationDialog()
+cal_dial = calibration_dialog.CalibrationDialog()
 app.exec()

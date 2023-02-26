@@ -20,7 +20,7 @@ import time
 
 from PyQt6 import QtCore
 
-from . import constants as aiw_constants
+from . import constants
 
 
 class TickGenerator(QtCore.QThread):
@@ -29,7 +29,7 @@ class TickGenerator(QtCore.QThread):
     # tick signal sends time since start in seconds.
     tick = QtCore.pyqtSignal(float)
 
-    def __init__(self, tps=aiw_constants.DEFAULT_FPS):
+    def __init__(self, tps=constants.DEFAULT_FPS):
         """Initialize.
 
         :param tps: Ticks per second. (constants.DEFAULT_FPS)
