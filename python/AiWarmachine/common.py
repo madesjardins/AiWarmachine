@@ -18,12 +18,13 @@
 
 import os
 import re
+import math
 
-from PyQt6 import QtWidgets
+from PyQt6 import QtWidgets, QtGui
 import cv2 as cv
 import numpy as np
 
-from . import constants as constants
+from . import constants
 
 
 def cmToIn(value):
@@ -228,3 +229,144 @@ def get_calibration_dir():
     if not os.path.exists(calibration_dir):
         os.makedirs(calibration_dir)
     return calibration_dir
+
+
+def get_color_from_name(color_name, alpha=255):
+    """Get a QColor from a color name.
+
+    :param color_name: The color name.
+    :type color_name: str
+
+        .. note:: Valid choices are:
+            -Black
+            -Gray
+            -White
+            -Yellow
+            -Orange
+            -Red
+            -Magenta
+            -Purple
+            -Blue
+            -Cyan
+            -Teal
+            -Green
+            -Lime
+
+    :param alpha: Alpha value. (255)
+    :type alpha: int
+
+    :return: QColor object.
+    :rtype: :class:`QColor`
+
+    :raise: ValueError if color is unknown.
+    """
+    if color_name == "Black":
+        return QtGui.QColor(0, 0, 0, alpha)
+    elif color_name == "Gray":
+        return QtGui.QColor(165, 165, 165, alpha)
+    elif color_name == "White":
+        return QtGui.QColor(255, 255, 255, alpha)
+    elif color_name == "Yellow":
+        return QtGui.QColor(255, 241, 0, alpha)
+    elif color_name == "Orange":
+        return QtGui.QColor(255, 140, 0, alpha)
+    elif color_name == "Red":
+        return QtGui.QColor(232, 17, 35, alpha)
+    elif color_name == "Magenta":
+        return QtGui.QColor(236, 0, 140, alpha)
+    elif color_name == "Purple":
+        return QtGui.QColor(104, 33, 122, alpha)
+    elif color_name == "Blue":
+        return QtGui.QColor(0, 24, 143, alpha)
+    elif color_name == "Cyan":
+        return QtGui.QColor(0, 188, 242, alpha)
+    elif color_name == "Teal":
+        return QtGui.QColor(0, 178, 148, alpha)
+    elif color_name == "Green":
+        return QtGui.QColor(0, 158, 73, alpha)
+    elif color_name == "Lime":
+        return QtGui.QColor(186, 216, 10, alpha)
+
+    raise ValueError(f"Color '{color_name}' is unknown.")
+
+
+def get_transform_matrix(tx, ty, tz, rx, ry, rz):
+    """Convert translation and euler rotation to transform matrix.
+
+    :param tx: Translation X.
+    :type tx: float
+
+    :param ty: Translation Y.
+    :type ty: float
+
+    :param tz: Translation Z.
+    :type tz: float
+
+    :param rx: Rotation X.
+    :type rx: float
+
+    :param ry: Rotation Y.
+    :type ry: float
+
+    :param rz: Rotation X.
+    :type rz: float
+
+    :return: 4x4 transform matrix.
+    :rtype: :class:`ndarray`
+    """
+    matrix = np.identity(4)
+
+    ch = math.cos(math.radians(ry))
+    sh = math.sin(math.radians(ry))
+    ca = math.cos(math.radians(rz))
+    sa = math.sin(math.radians(rz))
+    cb = math.cos(math.radians(rx))
+    sb = math.sin(math.radians(rx))
+
+    matrix[0][0] = ch * ca
+    matrix[0][1] = sh * sb - ch * sa * cb
+    matrix[0][2] = ch * sa * sb + sh * cb
+    matrix[1][0] = sa
+    matrix[1][1] = ca * cb
+    matrix[1][2] = -ca * sb
+    matrix[2][0] = -sh * ca
+    matrix[2][1] = sh * sa * cb + ch * sb
+    matrix[2][2] = -sh * sa * sb + ch * cb
+
+    matrix[0][3] = tx
+    matrix[1][3] = ty
+    matrix[2][3] = tz
+
+    return matrix
+
+
+def composite_images(image_base, image_overlay, overlay_x=0, overlay_y=0):
+    """Composite 2 images using over mode.
+
+    :param image_base: The base image.
+    :type image_base: :class:`QImage`
+
+    :param image_overlay: The image to composite over the base image.
+    :type image_overlay: :class:`QImage`
+
+    :param overlay_x: Horizontal overlay offset in pixels. (0)
+    :type overlay_x: int
+
+    :param overlay_y: Vertical overlay offset in pixels. (0)
+    :type overlay_y: int
+
+    :return: Composite image.
+    :rtype: :class:`QImage`
+    """
+    image_result = QtGui.QImage(image_base.size(), QtGui.QImage.Format.Format_ARGB32_Premultiplied)
+    painter = QtGui.QPainter(image_result)
+
+    painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
+    painter.drawImage(0, 0, image_base)
+
+    painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_SourceOver)
+    painter.drawImage(overlay_x, overlay_y, image_overlay)
+
+    painter.end()
+
+    return image_result

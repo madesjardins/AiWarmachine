@@ -345,19 +345,22 @@ class Camera(QtCore.QObject):
         self._mapx, self._mapy = cv.initUndistortRectifyMap(self._mtx, self._dist, None, self._mtx_prime, image_resolution, 5)
         mean_error = 0
         for i in range(len(checkerboard_3d_points_3_list)):
-            projected_2d_points_array, _ = cv.projectPoints(checkerboard_3d_points_3_list[i], rvecs_list[i], tvecs_list[i], mtx, dist)
+            projected_2d_points_array, _ = cv.projectPoints(checkerboard_3d_points_3_list[i], rvecs_list[i], tvecs_list[i], self._mtx, self._dist)
             error = cv.norm(checkerboard_2d_points_3_list[i], projected_2d_points_array, cv.NORM_L2) / len(projected_2d_points_array)
             mean_error += error
 
         return mean_error / len(checkerboard_3d_points_3_list)
 
-    def undistort(self, frame):
+    def undistort(self, frame, interpolation="Linear"):
         """Undistort image.
 
         :param frame: The image.
         :type frame: :class:`numpy.ndarray`
+
+        :param interpolation: Interpolation method in ['Nearest', 'Linear', 'Cubic', 'Lanczos4']. ('Linear')
+        :type interpolation: int
         """
-        dst = cv.remap(frame, self._mapx, self._mapy, cv.INTER_CUBIC)
+        dst = cv.remap(frame, self._mapx, self._mapy, constants.INTERPOLATION_METHOD_NAME_DICT.get(interpolation, cv.INTER_LINEAR))
         x, y, w, h = self._roi
         return dst[y:y + h, x:x + w].copy()
 
@@ -382,8 +385,6 @@ class Camera(QtCore.QObject):
         self._rvec = rvec
         self._tvec = tvec
 
-        print(f"Translation : {list(self._tvec)}\nRotation : {list(self._rvec)}")
-
     def project_points(self, points_array, undistorted=False, as_integers=False):
         """Project 3d points into 2d image space.
 
@@ -402,7 +403,7 @@ class Camera(QtCore.QObject):
             self._rvec,
             tvec,
             self._mtx_prime if undistorted else self._mtx,
-            self._dist
+            None if undistorted else self._dist
         )
 
         if undistorted:
@@ -470,3 +471,17 @@ class Camera(QtCore.QObject):
             fid.write(json.dumps(data, indent=2))
 
         return calibration_filepath
+
+    def get_undistorted_resolution(self):
+        """Get the width and height of undistorted images.
+
+        :return: Width and height.
+        :rtype: list
+        """
+        if self._roi is not None:
+            return self._roi[2:]
+        else:
+            return [
+                self._capture_properties_dict.get(common.get_capture_property_id("Width")),
+                self._capture_properties_dict.get(common.get_capture_property_id("Height"))
+            ]

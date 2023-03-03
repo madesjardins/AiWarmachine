@@ -29,6 +29,7 @@ from . import camera
 from . import common
 from . import constants
 from . import tick_generator
+from . import game_table
 
 
 class CalibrationDialog(QtWidgets.QDialog):
@@ -47,6 +48,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         self._current_camera_id = -1
         self._ticker = tick_generator.TickGenerator(30.0)
         self._disable_camera_settings_change = False
+        self._disable_table_change = False
         self._calibration_packages_dict = {
             'top': None,
             'front': None,
@@ -55,7 +57,9 @@ class CalibrationDialog(QtWidgets.QDialog):
         }
         self._last_valid_calibration_pkg = None
         self._in_calibration = False
-
+        self._table = game_table.GameTable()
+        self._image_overlay = None
+        self._overlay_need_update = True
         self._init_ui()
         self._init_connections()
         self.show()
@@ -108,10 +112,18 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.ui.push_calibrate.clicked.connect(self.calibrate)
         self.ui.push_pose.clicked.connect(self.pose)
 
-        # table offset
-        self.ui.double_table_t_x.valueChanged.connect(self.update_table_offset_in_camera)
-        self.ui.double_table_t_y.valueChanged.connect(self.update_table_offset_in_camera)
-        self.ui.double_table_t_z.valueChanged.connect(self.update_table_offset_in_camera)
+        # table
+        self.ui.spin_table_w.valueChanged.connect(self.update_table_dimensions)
+        self.ui.spin_table_h.valueChanged.connect(self.update_table_dimensions)
+        self.ui.combo_table_border_color.currentIndexChanged.connect(self.update_table_border_color)
+        self.ui.spin_table_border_color_alpha.valueChanged.connect(self.update_table_border_color)
+        self.ui.double_table_t_x.valueChanged.connect(self.update_table_transforms)
+        self.ui.double_table_t_y.valueChanged.connect(self.update_table_transforms)
+        self.ui.double_table_t_z.valueChanged.connect(self.update_table_transforms)
+        self.ui.double_table_r_x.valueChanged.connect(self.update_table_transforms)
+        self.ui.double_table_r_y.valueChanged.connect(self.update_table_transforms)
+        self.ui.double_table_r_z.valueChanged.connect(self.update_table_transforms)
+        self.ui.push_table_reset.clicked.connect(self.reset_table_transforms)
 
         # tick
         self._ticker.tick.connect(self.tick)
@@ -241,6 +253,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         if current_camera is None:
             return
 
+        composite_overlay = False
         camera_frame, info_str = current_camera.get_frame(return_info=True)
         if camera_frame is None:
             frame = common.get_frame_with_text("Please wait" + "." * (int(self._animation_frame / 30) % 4))
@@ -252,7 +265,8 @@ class CalibrationDialog(QtWidgets.QDialog):
                 QtGui.QImage.Format.Format_BGR888
             )
             self._animation_frame += 1
-
+            if self.ui.check_display_undistorted.isChecked():
+                self.ui.check_display_undistorted.setCheckState(QtCore.Qt.CheckState.Unchecked)
         else:
             self._animation_frame = 0
 
@@ -272,32 +286,26 @@ class CalibrationDialog(QtWidgets.QDialog):
                         corners,
                         ret
                     )
+                if self.ui.check_display_undistorted.isChecked():
+                    self.ui.check_display_undistorted.setCheckState(QtCore.Qt.CheckState.Unchecked)
             elif current_camera.is_calibrated():
-                do_undistort = self.ui.check_display_undistorted.isChecked()
-                if do_undistort:
-                    camera_frame = current_camera.undistort(camera_frame)
+                if not self.ui.check_display_undistorted.isChecked():
+                    self.ui.check_display_undistorted.setCheckState(QtCore.Qt.CheckState.Checked)
+                camera_frame = current_camera.undistort(camera_frame)
 
                 if current_camera.is_posed():
-                    square_length = self.ui.double_length_of_square.value()
-                    checkerboard_thickness = self.ui.double_thickness.value()
-                    if self.ui.combo_units.currentText() == "Centimeters":
-                        square_length = common.cmToIn(square_length)
-                        checkerboard_thickness = common.cmToIn(checkerboard_thickness)
+                    composite_overlay = True
+                    # recreate overlay if needed
+                    if (
+                        self._overlay_need_update or
+                        self._image_overlay is None or
+                        self._image_overlay.width() != camera_frame.shape[1] or
+                        self._image_overlay.height() != camera_frame.shape[0]
+                    ):
+                        self.update_axes_and_table_layer(camera_frame.shape[1], camera_frame.shape[0])
 
-                    # Draw axes on the checkerboard for easy verification
-                    axes = np.float32(
-                        [
-                            [0, 0, checkerboard_thickness],
-                            [5.0 * square_length, 0, checkerboard_thickness],
-                            [0, 5.0 * square_length, checkerboard_thickness],
-                            [0, 0, 5.0 * square_length + checkerboard_thickness]
-                        ]
-                    ).reshape(-1, 3)
-                    projected_points = current_camera.project_points(axes, do_undistort, as_integers=True)
-                    origin = projected_points[0].ravel()
-                    camera_frame = cv.line(camera_frame, origin, projected_points[1].ravel(), (0, 0, 255), 2)
-                    camera_frame = cv.line(camera_frame, origin, projected_points[2].ravel(), (0, 255, 0), 2)
-                    camera_frame = cv.line(camera_frame, origin, projected_points[3].ravel(), (255, 0, 0), 2)
+            elif self.ui.check_display_undistorted.isChecked():
+                self.ui.check_display_undistorted.setCheckState(QtCore.Qt.CheckState.Unchecked)
 
             image = QtGui.QImage(
                 camera_frame,
@@ -307,6 +315,9 @@ class CalibrationDialog(QtWidgets.QDialog):
                 QtGui.QImage.Format.Format_BGR888
             )
             self.ui.edit_camera_effective_resolution.setText(info_str)
+
+            if composite_overlay:
+                image = common.composite_images(image, self._image_overlay)
 
         if self.ui.check_display_actual_resolution.isChecked():
             self.ui.label_viewport_image.resize(image.width(), image.height())
@@ -571,6 +582,7 @@ class CalibrationDialog(QtWidgets.QDialog):
                 checkerboard_3d_reference_points_array,
                 corners2
             )
+            self._overlay_need_update = True
         except Exception:
             traceback.print_exc()
 
@@ -632,11 +644,128 @@ class CalibrationDialog(QtWidgets.QDialog):
             )
 
     @QtCore.pyqtSlot(float)
-    def update_table_offset_in_camera(self, _):
-        """Update the table offset translation in camera based on values in the ui."""
+    def update_table_transforms(self, _=0.0):
+        """Update the table translation and rotation."""
+        if self._disable_table_change:
+            return
+
+        self._table.set_transforms(
+            self.ui.double_table_t_x.value(),
+            self.ui.double_table_t_y.value(),
+            self.ui.double_table_t_z.value(),
+            self.ui.double_table_r_x.value(),
+            self.ui.double_table_r_y.value(),
+            self.ui.double_table_r_z.value(),
+        )
+
+        self._overlay_need_update = True
+
+    @QtCore.pyqtSlot(int)
+    def update_table_dimensions(self, _=0):
+        """Update the table dimensions."""
+        if self._disable_table_change:
+            return
+
+        self._table.set_dimensions(
+            self.ui.spin_table_w.value(),
+            self.ui.spin_table_h.value(),
+        )
+
+        self._overlay_need_update = True
+
+    @QtCore.pyqtSlot(int)
+    def update_table_border_color(self, _=0):
+        """Update the table border color."""
+        if self._disable_table_change:
+            return
+
+        self._table.set_border_color_from_name(
+            self.ui.combo_table_border_color.currentText(),
+            self.ui.spin_table_border_color_alpha.value(),
+        )
+
+        self._overlay_need_update = True
+
+    @QtCore.pyqtSlot()
+    def reset_table_transforms(self):
+        """Reset the table transforms."""
+        self._disable_table_change = True
+        self.ui.double_table_t_x.setValue(0.0)
+        self.ui.double_table_t_y.setValue(0.0)
+        self.ui.double_table_t_z.setValue(0.0)
+        self.ui.double_table_r_x.setValue(0.0)
+        self.ui.double_table_r_y.setValue(0.0)
+        self.ui.double_table_r_z.setValue(0.0)
+        self._disable_table_change = False
+        self.update_table_transforms()
+
+    def update_axes_and_table_layer(self, width, height):
+        """Update the axes and table layer to be composited on top of the image.
+
+        :param width: Width of the overlay image.
+        :type width: int
+
+        :param height: Height of the overlay image.
+        :type height: int
+        """
         if (current_camera := self.get_current_camera()) is not None:
-            current_camera.set_table_offset(
-                x=self.ui.double_table_t_x.value(),
-                y=self.ui.double_table_t_y.value(),
-                z=self.ui.double_table_t_z.value()
-            )
+
+            # Prepare transparent overlay
+            image_size = QtCore.QSize(width, height)
+            self._image_overlay = QtGui.QImage(image_size, QtGui.QImage.Format.Format_ARGB32_Premultiplied)
+            painter = QtGui.QPainter(self._image_overlay)
+            painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
+            painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
+            painter.fillRect(self._image_overlay.rect(), QtCore.Qt.GlobalColor.transparent)
+
+            square_length = self.ui.double_length_of_square.value()
+            checkerboard_thickness = self.ui.double_thickness.value()
+            if self.ui.combo_units.currentText() == "Centimeters":
+                square_length = common.cmToIn(square_length)
+                checkerboard_thickness = common.cmToIn(checkerboard_thickness)
+
+            # Draw axes on the checkerboard for easy verification
+            axes = np.float32(
+                [
+                    [0, 0, checkerboard_thickness],
+                    [5.0 * square_length, 0, checkerboard_thickness],
+                    [0, 5.0 * square_length, checkerboard_thickness],
+                    [0, 0, 5.0 * square_length + checkerboard_thickness]
+                ]
+            ).reshape(-1, 3)
+            projected_points = current_camera.project_points(axes, undistorted=True, as_integers=True)
+            origin_x, origin_y = projected_points[0].ravel()
+            x_axis_x, x_axis_y = projected_points[1].ravel()
+            y_axis_x, y_axis_y = projected_points[2].ravel()
+            z_axis_x, z_axis_y = projected_points[3].ravel()
+
+            # Draw Axes
+            brush = QtGui.QBrush()
+            painter.setBrush(brush)
+            pen = QtGui.QPen(QtCore.Qt.GlobalColor.red, 2, QtCore.Qt.PenStyle.SolidLine)
+            painter.setPen(pen)
+            painter.drawLine(origin_x, origin_y, x_axis_x, x_axis_y)
+            pen.setColor(QtCore.Qt.GlobalColor.green)
+            painter.setPen(pen)
+            painter.drawLine(origin_x, origin_y, y_axis_x, y_axis_y)
+            pen.setColor(QtCore.Qt.GlobalColor.blue)
+            painter.setPen(pen)
+            painter.drawLine(origin_x, origin_y, z_axis_x, z_axis_y)
+
+            # table border
+            table_corners_list = self._table.get_corners()
+            projected_points = current_camera.project_points(table_corners_list, undistorted=True, as_integers=True)
+            table_corner_points_list = [
+                QtCore.QPointF(*projected_points[0].ravel()),
+                QtCore.QPointF(*projected_points[1].ravel()),
+                QtCore.QPointF(*projected_points[2].ravel()),
+                QtCore.QPointF(*projected_points[3].ravel()),
+                QtCore.QPointF(*projected_points[0].ravel()),
+            ]
+            pen.setColor(self._table.color)
+            painter.setPen(pen)
+            painter.drawPolyline(table_corner_points_list)
+
+            painter.end()
+
+            self._overlay_need_update = False

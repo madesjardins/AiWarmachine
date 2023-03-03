@@ -92,3 +92,10 @@ MESSAGE_BOX_ICON_NAME_TO_OBJECT_DICT = {
     "Warning": QtWidgets.QMessageBox.Icon.Warning,
     "Critical": QtWidgets.QMessageBox.Icon.Critical
 }
+
+INTERPOLATION_METHOD_NAME_DICT = {
+    'Nearest': cv.INTER_NEAREST,
+    'Linear': cv.INTER_LINEAR,
+    'Cubic': cv.INTER_CUBIC,
+    'Lanczos4': cv.INTER_LANCZOS4,
+}
