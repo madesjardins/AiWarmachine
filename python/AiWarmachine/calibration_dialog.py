@@ -82,6 +82,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.ui.push_delete_camera.clicked.connect(self.delete_camera)
         self.ui.list_cameras.itemSelectionChanged.connect(self.set_viewport_to_selected)
         self.ui.push_save_camera.clicked.connect(self.save)
+        self.ui.push_load_camera.clicked.connect(self.load)
 
         # camera settings
         self.ui.edit_camera_name.textEdited.connect(self.set_current_camera_name)
@@ -131,7 +132,7 @@ class CalibrationDialog(QtWidgets.QDialog):
     def update_current_camera_item_label(self):
         """Update the current camera item's label."""
         if (
-            (current_camera := self._cameras_dict.get(self._current_camera_id)) is not None and
+            (current_camera := self.get_current_camera()) is not None and
             (camera_item := self.get_current_camera_item()) is not None
         ):
             camera_item.setText(f'Camera ID: {current_camera.device_id}, "{current_camera.name}", "{current_camera.model_name}"')
@@ -163,7 +164,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         """
         if self._disable_camera_settings_change:
             return
-        if (current_camera := self._cameras_dict.get(self._current_camera_id)) is not None:
+        if (current_camera := self.get_current_camera()) is not None:
             current_camera.name = name
             self.update_current_camera_item_label()
 
@@ -176,7 +177,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         """
         if self._disable_camera_settings_change:
             return
-        if (current_camera := self._cameras_dict.get(self._current_camera_id)) is not None:
+        if (current_camera := self.get_current_camera()) is not None:
             current_camera.model_name = model_name
             self.update_current_camera_item_label()
 
@@ -189,7 +190,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         """
         if self._disable_camera_settings_change:
             return
-        if (current_camera := self._cameras_dict.get(self._current_camera_id)) is not None:
+        if (current_camera := self.get_current_camera()) is not None:
             device_id = int(device_id_str)
             if device_id != current_camera.device_id and device_id in self.get_available_device_ids_list():
                 self.pause_ticker()
@@ -249,7 +250,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         :param tick_time: Time since the begining of the tick start.
         :type tick_time: float
         """
-        current_camera = self._cameras_dict.get(self._current_camera_id)
+        current_camera = self.get_current_camera()
         if current_camera is None:
             return
 
@@ -345,6 +346,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         :type default: bool
         """
         self._disable_camera_settings_change = True
+
         if default:
             self.ui.edit_camera_name.setText("")
             self.ui.combo_camera_device_id.clear()
@@ -361,6 +363,39 @@ class CalibrationDialog(QtWidgets.QDialog):
                 available_device_ids_list
             )
             self.ui.combo_camera_device_id.setCurrentIndex(available_device_ids_list.index(device_id_str))
+            width = current_camera.get_capture_property(common.get_capture_property_id("Width"))
+            height = current_camera.get_capture_property(common.get_capture_property_id("Height"))
+            capture_resolution_str = f"{width}x{height}"
+            index = self.ui.combo_camera_capture_resolution.findText(capture_resolution_str)
+            if index > -1:
+                self.ui.combo_camera_capture_resolution.setCurrentIndex(index)
+            else:
+                self.ui.combo_camera_capture_resolution.addItem(capture_resolution_str)
+                self.ui.combo_camera_capture_resolution.setCurrentIndex(self.ui.combo_camera_capture_resolution.count() - 1)
+            self.ui.spin_camera_exposure.setValue(
+                current_camera.get_capture_property(common.get_capture_property_id("Exposure"))
+            )
+            self.ui.slider_camera_focus.setValue(
+                current_camera.get_capture_property(common.get_capture_property_id("Focus"))
+            )
+            self.ui.slider_camera_zoom.setValue(
+                current_camera.get_capture_property(common.get_capture_property_id("Zoom"))
+            )
+            self.ui.slider_camera_brightness.setValue(
+                current_camera.get_capture_property(common.get_capture_property_id("Brightness"))
+            )
+            self.ui.slider_camera_contrast.setValue(
+                current_camera.get_capture_property(common.get_capture_property_id("Contrast"))
+            )
+            self.ui.slider_camera_gain.setValue(
+                current_camera.get_capture_property(common.get_capture_property_id("Gain"))
+            )
+            self.ui.slider_camera_saturation.setValue(
+                current_camera.get_capture_property(common.get_capture_property_id("Saturation"))
+            )
+            self.ui.slider_camera_sharpness.setValue(
+                current_camera.get_capture_property(common.get_capture_property_id("Sharpness"))
+            )
 
         self._disable_camera_settings_change = False
 
@@ -440,7 +475,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         """
         if self._disable_camera_settings_change:
             return
-        if (current_camera := self._cameras_dict.get(self._current_camera_id)) is not None:
+        if (current_camera := self.get_current_camera()) is not None:
             self.pause_ticker()
             width_str, height_str = resolution_str.split("x")
             current_camera.stop()
@@ -461,7 +496,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         """
         if self._disable_camera_settings_change:
             return
-        if (current_camera := self._cameras_dict.get(self._current_camera_id)) is not None:
+        if (current_camera := self.get_current_camera()) is not None:
             current_camera.set_capture_property(property, value)
 
     @QtCore.pyqtSlot(QtWidgets.QSlider, int)
@@ -524,7 +559,7 @@ class CalibrationDialog(QtWidgets.QDialog):
     @QtCore.pyqtSlot()
     def calibrate(self):
         """Calibrate the camera using the top, front and side views."""
-        current_camera = self._cameras_dict.get(self._current_camera_id)
+        current_camera = self.get_current_camera()
         if current_camera is None:
             print("No current camera")
             return
@@ -560,7 +595,7 @@ class CalibrationDialog(QtWidgets.QDialog):
     @QtCore.pyqtSlot()
     def pose(self):
         """Calculate camera pose using pose view."""
-        current_camera = self._cameras_dict.get(self._current_camera_id)
+        current_camera = self.get_current_camera()
         if current_camera is None:
             print("No current camera")
             return
@@ -637,11 +672,60 @@ class CalibrationDialog(QtWidgets.QDialog):
         if error_message:
             common.message_box(
                 title="Error",
-                text="Unable to save camera settings and calibration.",
+                text="Unable to save camera data.",
                 info_text=error_message,
                 icon_name="Critical",
                 button_names_list=["Close"]
             )
+
+    @QtCore.pyqtSlot()
+    def load(self):
+        """Load saved camera settings and calibration data."""
+        filepath_list = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file', common.get_calibration_dir())
+
+        if not filepath_list or not filepath_list[0]:
+            return
+
+        camera_data = common.load_camera_data(filepath_list[0])
+        camera_data['debug'] = True
+        device_id = camera_data['device_id']
+        current_camera = self.get_current_camera()
+        device_id_available = device_id in self.get_available_device_ids_list(as_list_of_str=False)
+        replace_camera = False
+        if current_camera is not None:
+            info_text = "Answering 'Yes' will load the camera settings and calibration using the current camera device id."
+            button_names_list = ["Yes", "Cancel"]
+
+            if device_id_available:
+                info_text += "<br>Answering 'No' will create a new camera with the device id stored in the file."
+                button_names_list.insert(1, "No")
+
+            answer = common.message_box(
+                title="Load Camera Calibration",
+                text="Replace current camera ?",
+                info_text=info_text,
+                icon_name="Question",
+                button_names_list=button_names_list
+            )
+            if answer == "Cancel":
+                return
+            elif answer == "Yes":
+                replace_camera = True
+
+        self.pause_ticker()
+        if replace_camera:
+            current_camera.load(camera_data)
+        else:
+            # create the camera objects
+            new_camera = camera.Camera(**camera_data)
+            self._cameras_dict[device_id] = new_camera
+            self._current_camera_id = device_id
+
+            # add to list
+            self.ui.list_cameras.addItem(f'Camera ID: {device_id}, "{new_camera.name}", "{new_camera.model_name}"')
+
+            # select the new camera item in list
+            self.ui.list_cameras.setCurrentRow(self.ui.list_cameras.count() - 1)
 
     @QtCore.pyqtSlot(float)
     def update_table_transforms(self, _=0.0):

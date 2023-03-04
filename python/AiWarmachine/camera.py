@@ -49,7 +49,6 @@ class Camera(QtCore.QObject):
         roi=None,
         tvec=None,
         rvec=None,
-        table_offset_tvec=None,
         debug=False
     ):
         """Initialize.
@@ -107,9 +106,6 @@ class Camera(QtCore.QObject):
         self._roi = roi
         self._tvec = tvec
         self._rvec = rvec
-        self._table_offset_tvec = table_offset_tvec
-        if self._table_offset_tvec is None:
-            self._table_offset_tvec = np.array([[0], [0], [0]], np.float32)
 
         # camera feed
         self._device_id = device_id
@@ -119,6 +115,18 @@ class Camera(QtCore.QObject):
         self._camera_feed = camera_feed.CameraFeed(self, debug=self.debug)
         self._camera_feed.frame_grabbed.connect(self.new_frame)
 
+        self.recalculate_undistort_mapping()
+
+        # frame buffer
+        self._reset_framebuffer()
+
+        self._previous_time = time.time()
+        self.current_fps = 0.0
+
+        self._effective_resolution = [None, None]
+
+    def recalculate_undistort_mapping(self):
+        """Recalculate undistort mapping based on current calibration."""
         if self._mtx is not None and self._mtx_prime is not None and self._roi is not None:
             image_resolution = (
                 self._capture_properties_dict.get(common.get_capture_property_id("Width"), constants.DEFAULT_CAPTURE_WIDTH),
@@ -128,14 +136,6 @@ class Camera(QtCore.QObject):
         else:
             self._mapx = None
             self._mapy = None
-
-        # frame buffer
-        self._reset_framebuffer()
-
-        self._previous_time = time.time()
-        self.current_fps = 0.0
-
-        self._effective_resolution = [None, None]
 
     def _reset_framebuffer(self):
         """Reset the framebuffer and framebuffer index."""
@@ -309,8 +309,7 @@ class Camera(QtCore.QObject):
         return (
             self.is_calibrated and
             self._rvec is not None and
-            self._tvec is not None and
-            self._table_offset_tvec is not None
+            self._tvec is not None
         )
 
     def calibrate(self, checkerboard_3d_points_3_list, checkerboard_2d_points_3_list, image_resolution):
@@ -397,11 +396,10 @@ class Camera(QtCore.QObject):
         :param as_integers: Whether or not to convert to int instead of float. (False)
         :type as_integers: bool
         """
-        tvec = self._tvec - self._table_offset_tvec
         projected_2d_points_array, _ = cv.projectPoints(
             points_array,
             self._rvec,
-            tvec,
+            self._tvec,
             self._mtx_prime if undistorted else self._mtx,
             None if undistorted else self._dist
         )
@@ -416,20 +414,6 @@ class Camera(QtCore.QObject):
             return (np.rint(projected_2d_points_array)).astype(int)
         else:
             return projected_2d_points_array
-
-    def set_table_offset(self, x, y, z):
-        """Set the table offset translation vector.
-
-        :param x: X.
-        :type x: float
-
-        :param y: Y.
-        :type y: float
-
-        :param z: Z.
-        :type z: float
-        """
-        self._table_offset_tvec = np.array([[x], [y], [z]], np.float32)
 
     def save(self):
         """Save the current camera settings and calibration.
@@ -464,13 +448,39 @@ class Camera(QtCore.QObject):
             'roi': self._roi,
             'tvec': self._tvec.tolist() if self._tvec is not None else None,
             'rvec': self._rvec.tolist() if self._rvec is not None else None,
-            'table_offset_tvec': self._table_offset_tvec.tolist() if self._table_offset_tvec is not None else None,
-
         }
         with open(calibration_filepath, 'w') as fid:
             fid.write(json.dumps(data, indent=2))
 
         return calibration_filepath
+
+    def load(self, camera_data, update_device_id=False):
+        """Load the camera data into this one.
+
+        :param camera_data: Capture properties, calibration and pose data in the same format as the save produces.
+        :type camera_data: dict
+
+        :param update_device_id: Whether to update the device id or not. (False)
+        :type update_device_id: bool
+        """
+        self.stop()
+        self.name = camera_data['name']
+        self.model_name = camera_data['model_name']
+        for property_id, property_value in camera_data['capture_properties_dict'].items():
+            self.set_capture_property(property_id, property_value)
+
+        self._mtx = camera_data['mtx']
+        self._dist = camera_data['dist']
+        self._mtx_prime = camera_data['mtx_prime']
+        self._roi = camera_data['roi']
+        self._tvec = camera_data['tvec']
+        self._rvec = camera_data['rvec']
+        self.recalculate_undistort_mapping()
+
+        if update_device_id:
+            self.device_id = camera_data['device_id']
+
+        self.start()
 
     def get_undistorted_resolution(self):
         """Get the width and height of undistorted images.
