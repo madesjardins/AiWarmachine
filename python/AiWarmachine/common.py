@@ -220,16 +220,18 @@ def get_aiwarmachine_root_dir():
     return re.sub("/[^/]+/\\.\\./.*$", "", os.getenv('AIWARMACHINE_PYTHON_DIR').replace("\\", "/"))
 
 
-def get_calibration_dir():
-    """Get the calibration directory and create it if it does not exist.
+def get_saved_subdir(subdir_name):
+    """Get a saved subdirectory path and create it if it does not exist.
+
+    :param subdirectory_name
 
     :return: The directory path.
     :rtype: str
     """
-    calibration_dir = f"{get_aiwarmachine_root_dir()}/calibration"
-    if not os.path.exists(calibration_dir):
-        os.makedirs(calibration_dir)
-    return calibration_dir
+    subdir_path = f"{get_aiwarmachine_root_dir()}/saved/{subdir_name}"
+    if not os.path.exists(subdir_path):
+        os.makedirs(subdir_path)
+    return subdir_path
 
 
 def get_color_from_name(color_name, alpha=255):

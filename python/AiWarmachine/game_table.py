@@ -16,6 +16,9 @@
 #
 """The game table class contains everything related to the table, like play area dimension and terrain features."""
 
+import re
+import json
+
 import numpy as np
 
 from . import common
@@ -48,6 +51,7 @@ class GameTable(object):
 
     def __init__(
         self,
+        name="Latest",
         width=48,
         height=48,
         border_color_name="Yellow",
@@ -60,6 +64,9 @@ class GameTable(object):
         rz=0.0,
     ):
         """Initialize game table.
+
+        :param name: A small name describing this table. ("Latest")
+        :type name: str
 
         :param width: Width of the table in inches. (48)
         :type width: int
@@ -108,10 +115,29 @@ class GameTable(object):
         """
         super().__init__()
 
+        self.name = name
         self._width = width
         self._height = height
         self.set_border_color_from_name(border_color_name, alpha)
         self.set_transforms(tx, ty, tz, rx, ry, rz)
+
+    @property
+    def name(self):
+        """Get the table name.
+
+        :return: The name of the table.
+        :rtype: str
+        """
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        """Set the name of the table.
+
+        :param value: The name of the table.
+        :type value: str
+        """
+        self._name = value.strip() or "Latest"
 
     def set_border_color_from_name(self, border_color_name, alpha=255):
         """Update the border color of the table.
@@ -140,6 +166,14 @@ class GameTable(object):
         self._alpha = alpha
         self._border_color_name = border_color_name
         self.color = common.get_color_from_name(self._border_color_name, alpha=self._alpha)
+
+    def get_border_color_name_and_alpha(self):
+        """Get the boder color name and alpha value.
+
+        :return: Color name and alpha.
+        :rtype: tuple
+        """
+        return (self._border_color_name, self._alpha)
 
     def _update_corners(self):
         """Recalculate 3d positions of borders."""
@@ -170,8 +204,37 @@ class GameTable(object):
         :param rz: Rotation X.
         :type rz: float
         """
+        self._tx = tx
+        self._ty = ty
+        self._tz = tz
+        self._rx = rx
+        self._ry = ry
+        self._rz = rz
         self._matrix = common.get_transform_matrix(tx, ty, tz, rx, ry, rz)
         self._update_corners()
+
+    def get_transforms(self):
+        """Get the translation and rotation xyz values.
+
+        :return: Translate xyz and rotation xyz as a tuple of 6 values.
+        :rtype: tuple
+        """
+        return (
+            self._tx,
+            self._ty,
+            self._tz,
+            self._rx,
+            self._ry,
+            self._rz
+        )
+
+    def get_transform_matrix(self):
+        """Get the table transformation 4x4 matrix.
+
+        :return: Transformation matrix.
+        :rtype: :class:`ndarray`
+        """
+        return self._matrix.copy()
 
     def set_dimensions(self, width, height):
         """Set the table dimensions.
@@ -186,6 +249,14 @@ class GameTable(object):
         self._height = height
         self._update_corners()
 
+    def get_dimensions(self):
+        """Get width and height values.
+
+        :return: Width and height.
+        :rtype: tuple
+        """
+        return (self._width, self._height)
+
     def get_corners(self):
         """Get the 3d positions of the 4 table corners in order: TL, TR, BR, BL, where T is top and B bottom.
 
@@ -193,3 +264,58 @@ class GameTable(object):
         :rtype: list of :class:`np.ndarray`
         """
         return np.copy(self._corners)
+
+    def get_save_filepath(self):
+        """Get the filepath where the table file would be saved.
+
+        :return: Filepath.
+        :rtype: str
+        """
+        table_dir = common.get_saved_subdir("table")
+        name = re.sub('[^a-zA-Z0-9]', '_', self.name)
+        table_filename = f"{name}__{self._width}x{self._height}.json"
+        table_filepath = f"{table_dir}/{table_filename}"
+
+        return table_filepath
+
+    def save(self, filepath):
+        """Save the current dimension and  settings and calibration.
+
+        :param filepath: The filepath to save the camera to.
+        :type filepath: str
+        """
+        data = {
+            'name': self.name,
+            'width': self._width,
+            'height': self._height,
+            'border_color_name': self._border_color_name,
+            'alpha': self._alpha,
+            'tx': self._tx,
+            'ty': self._ty,
+            'tz': self._tz,
+            'rx': self._rx,
+            'ry': self._ry,
+            'rz': self._rz,
+        }
+
+        with open(filepath, 'w') as fid:
+            fid.write(json.dumps(data, indent=2))
+
+    def load(self, table_data):
+        """Load settings from a table file.
+
+        :param filepath: The filepath to save the camera to.
+        :type filepath: str
+        """
+        self.name = table_data['name']
+        self._width = table_data['width']
+        self._height = table_data['height']
+        self.set_border_color_from_name(table_data['border_color_name'], table_data['alpha'])
+        self.set_transforms(
+            table_data['tx'],
+            table_data['ty'],
+            table_data['tz'],
+            table_data['rx'],
+            table_data['ry'],
+            table_data['rz']
+        )

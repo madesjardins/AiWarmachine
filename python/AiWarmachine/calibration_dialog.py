@@ -20,6 +20,8 @@ import os
 import traceback
 import re
 from functools import partial
+from datetime import datetime
+import json
 
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import cv2 as cv
@@ -81,8 +83,8 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.ui.push_add_camera.clicked.connect(self.add_camera)
         self.ui.push_delete_camera.clicked.connect(self.delete_camera)
         self.ui.list_cameras.itemSelectionChanged.connect(self.set_viewport_to_selected)
-        self.ui.push_save_camera.clicked.connect(self.save)
-        self.ui.push_load_camera.clicked.connect(self.load)
+        self.ui.push_save_camera.clicked.connect(self.camera_save)
+        self.ui.push_load_camera.clicked.connect(self.camera_load)
 
         # camera settings
         self.ui.edit_camera_name.textEdited.connect(self.set_current_camera_name)
@@ -112,6 +114,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.ui.push_calibration_image_pose.clicked.connect(partial(self.trigger_calibration_image, "pose"))
         self.ui.push_calibrate.clicked.connect(self.calibrate)
         self.ui.push_pose.clicked.connect(self.pose)
+        self.ui.push_uncalibrate.clicked.connect(self.uncalibrate)
 
         # table
         self.ui.spin_table_w.valueChanged.connect(self.update_table_dimensions)
@@ -125,6 +128,12 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.ui.double_table_r_y.valueChanged.connect(self.update_table_transforms)
         self.ui.double_table_r_z.valueChanged.connect(self.update_table_transforms)
         self.ui.push_table_reset.clicked.connect(self.reset_table_transforms)
+        self.ui.push_table_save.clicked.connect(self.table_save)
+        self.ui.push_table_load.clicked.connect(self.table_load)
+        self.ui.edit_camera_name.textEdited.connect(self.set_table_name)
+
+        # snapshot
+        self.ui.push_snapshot_save.clicked.connect(self.snapshot_save)
 
         # tick
         self._ticker.tick.connect(self.tick)
@@ -308,7 +317,7 @@ class CalibrationDialog(QtWidgets.QDialog):
             elif self.ui.check_display_undistorted.isChecked():
                 self.ui.check_display_undistorted.setCheckState(QtCore.Qt.CheckState.Unchecked)
 
-            image = QtGui.QImage(
+            self.latest_image = QtGui.QImage(
                 camera_frame,
                 camera_frame.shape[1],
                 camera_frame.shape[0],
@@ -318,7 +327,9 @@ class CalibrationDialog(QtWidgets.QDialog):
             self.ui.edit_camera_effective_resolution.setText(info_str)
 
             if composite_overlay:
-                image = common.composite_images(image, self._image_overlay)
+                image = common.composite_images(self.latest_image, self._image_overlay)
+            else:
+                image = self.latest_image
 
         if self.ui.check_display_actual_resolution.isChecked():
             self.ui.label_viewport_image.resize(image.width(), image.height())
@@ -602,6 +613,9 @@ class CalibrationDialog(QtWidgets.QDialog):
         elif not current_camera.is_calibrated():
             print("Current camera is not calibrated.")
             return
+        elif not self._calibration_packages_dict["pose"]:
+            print("No image to use for pose.")
+            return
 
         frame_gray, corners = self._calibration_packages_dict["pose"]
         corners2 = cv.cornerSubPix(
@@ -620,6 +634,15 @@ class CalibrationDialog(QtWidgets.QDialog):
             self._overlay_need_update = True
         except Exception:
             traceback.print_exc()
+
+    @QtCore.pyqtSlot()
+    def uncalibrate(self):
+        """Remove all calibration settings on the current camera."""
+        current_camera = self.get_current_camera()
+        if current_camera is not None:
+            self.pause_ticker()
+            current_camera.uncalibrate()
+            self.start_ticker()
 
     def get_checkerboard_3d_reference_points(self, use_checkerboard_thickness=True):
         """Get checkboard 3D reference points.
@@ -656,12 +679,23 @@ class CalibrationDialog(QtWidgets.QDialog):
         return np.array(checkerboard_ref_points, np.float32)
 
     @QtCore.pyqtSlot()
-    def save(self):
+    def camera_save(self):
         """Save the current camera settings and calibration in the default calibration folder."""
         error_message = ""
         if (current_camera := self.get_current_camera()) is not None:
             try:
-                filepath = current_camera.save()
+                filepath = current_camera.get_save_filepath()
+                if os.path.exists(filepath):
+                    answer = common.message_box(
+                        title="Question",
+                        text="File already exist, do you want to overwrite ?",
+                        info_text=filepath,
+                        icon_name="Question",
+                        button_names_list=["Yes", "No"]
+                    )
+                    if answer != "Yes":
+                        return
+                current_camera.save()
                 print(f"Current camera saved to : '{filepath}'")
             except Exception as err:
                 error_message = str(err)
@@ -679,9 +713,9 @@ class CalibrationDialog(QtWidgets.QDialog):
             )
 
     @QtCore.pyqtSlot()
-    def load(self):
+    def camera_load(self):
         """Load saved camera settings and calibration data."""
-        filepath_list = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file', common.get_calibration_dir())
+        filepath_list = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file', common.get_saved_subdir("camera"))
 
         if not filepath_list or not filepath_list[0]:
             return
@@ -715,6 +749,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.pause_ticker()
         if replace_camera:
             current_camera.load(camera_data)
+            self.start_ticker()
         else:
             # create the camera objects
             new_camera = camera.Camera(**camera_data)
@@ -726,6 +761,8 @@ class CalibrationDialog(QtWidgets.QDialog):
 
             # select the new camera item in list
             self.ui.list_cameras.setCurrentRow(self.ui.list_cameras.count() - 1)
+
+        self._overlay_need_update = True
 
     @QtCore.pyqtSlot(float)
     def update_table_transforms(self, _=0.0):
@@ -853,3 +890,81 @@ class CalibrationDialog(QtWidgets.QDialog):
             painter.end()
 
             self._overlay_need_update = False
+
+    def table_save(self):
+        """Save the table to file."""
+        filepath = self._table.get_save_filepath()
+        if os.path.exists(filepath):
+            answer = common.message_box(
+                title="Question",
+                text="File already exist, do you want to overwrite ?",
+                info_text=filepath,
+                icon_name="Question",
+                button_names_list=["Yes", "No"]
+            )
+            if answer != "Yes":
+                return
+        self._table.save(filepath)
+
+    def fill_table_settings(self):
+        """Sync the table settings with the current table."""
+        self._disable_table_change = True
+        self.ui.edit_table_name.setText(self._table.name)
+        width, height = self._table.get_dimensions()
+        self.ui.spin_table_w.setValue(width)
+        self.ui.spin_table_h.setValue(height)
+        border_color_name, alpha = self._table.get_border_color_name_and_alpha()
+        index = self.ui.combo_table_border_color.findText(border_color_name)
+        if index > -1:
+            self.ui.combo_table_border_color.setCurrentIndex(index)
+        self.ui.spin_table_border_color_alpha.setValue(alpha)
+        tx, ty, tz, rx, ry, rz = self._table.get_transforms()
+        self.ui.double_table_t_x.setValue(tx)
+        self.ui.double_table_t_y.setValue(ty)
+        self.ui.double_table_t_z.setValue(tz)
+        self.ui.double_table_r_x.setValue(rx)
+        self.ui.double_table_r_y.setValue(ry)
+        self.ui.double_table_r_z.setValue(rz)
+        self._disable_table_change = False
+
+    def table_load(self):
+        """Load a table from file."""
+        filepath_list = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file', common.get_saved_subdir("table"))
+
+        if not filepath_list or not filepath_list[0]:
+            return
+
+        with open(filepath_list[0], 'r') as fid:
+            table_data = json.loads(fid.read())
+
+        self._table.load(table_data)
+        self.fill_table_settings()
+        self._overlay_need_update = True
+
+    @QtCore.pyqtSlot(str)
+    def set_table_name(self, name):
+        """Set the table name.
+
+        :param name: New name for the table.
+        :type name: str
+        """
+        self._table.name = name
+
+    @QtCore.pyqtSlot()
+    def snapshot_save(self):
+        """Save the latest image to disk."""
+        now = datetime.now()
+        daystamp = now.strftime("%Y_%m_%d")
+        timestamp = now.strftime("%Y_%m_%d_%H_%M_%S")
+        name = re.sub("[^a-zA-Z0-9_]", "_", self.ui.edit_snapshot_name.text())
+        snapshot_dir_path = common.get_saved_subdir('snapshot')
+        if name:
+            filepath = f"{snapshot_dir_path}/{name}/{name}__{timestamp}.jpg"
+        else:
+            filepath = f"{snapshot_dir_path}/{daystamp}/{timestamp}.jpg"
+
+        if not os.path.exists(os.path.dirname(filepath)):
+            os.makedirs(os.path.dirname(filepath))
+
+        self.latest_image.save(filepath, quality=95)
+        print(f"Snapshot saved to: '{filepath}'")

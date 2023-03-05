@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1305</width>
+    <width>1220</width>
     <height>832</height>
    </rect>
   </property>
@@ -32,6 +32,18 @@
       <layout class="QVBoxLayout" name="vbox_camera">
        <item>
         <widget class="QLabel" name="label_cameras_list">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
          <property name="font">
           <font>
            <pointsize>10</pointsize>
@@ -1276,6 +1288,20 @@
         </layout>
        </item>
        <item>
+        <layout class="QHBoxLayout" name="hbox_uncalibrate">
+         <item>
+          <widget class="QPushButton" name="push_uncalibrate">
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
+           <property name="text">
+            <string>Uncalibrate</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
         <spacer name="spacer_camera">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -1324,8 +1350,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>710</width>
-            <height>735</height>
+            <width>625</width>
+            <height>706</height>
            </rect>
           </property>
           <property name="sizePolicy">
@@ -1380,8 +1406,8 @@
         </widget>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout">
-         <item>
+        <layout class="QGridLayout" name="grid_display_and_snapshot">
+         <item row="0" column="0">
           <widget class="QCheckBox" name="check_display_actual_resolution">
            <property name="focusPolicy">
             <enum>Qt::NoFocus</enum>
@@ -1391,7 +1417,17 @@
            </property>
           </widget>
          </item>
-         <item>
+         <item row="1" column="1">
+          <widget class="QPushButton" name="push_snapshot_save">
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
+           <property name="text">
+            <string>Save Snapshot</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
           <widget class="QCheckBox" name="check_display_undistorted">
            <property name="enabled">
             <bool>false</bool>
@@ -1403,6 +1439,67 @@
             <string>Undistorted</string>
            </property>
           </widget>
+         </item>
+         <item row="1" column="0">
+          <layout class="QHBoxLayout" name="hbox_snapshot">
+           <item>
+            <widget class="QLabel" name="label_snapshot">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Snapshot name:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="edit_snapshot_name">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>225</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="focusPolicy">
+              <enum>Qt::StrongFocus</enum>
+             </property>
+             <property name="readOnly">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="0" column="2">
+          <spacer name="horizontalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>10</width>
+             <height>10</height>
+            </size>
+           </property>
+          </spacer>
          </item>
         </layout>
        </item>
@@ -1419,6 +1516,18 @@
       <layout class="QVBoxLayout" name="vbox_calibration_images">
        <item>
         <widget class="QLabel" name="label_calibration_images">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>1</width>
+           <height>0</height>
+          </size>
+         </property>
          <property name="font">
           <font>
            <pointsize>10</pointsize>
@@ -1578,6 +1687,51 @@
           <string>Table</string>
          </property>
         </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="hbox_table_name">
+         <item>
+          <widget class="QLabel" name="label_table_name">
+           <property name="text">
+            <string>Name:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="edit_table_name">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>160</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::StrongFocus</enum>
+           </property>
+           <property name="text">
+            <string>Latest</string>
+           </property>
+           <property name="readOnly">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
         <layout class="QHBoxLayout" name="hbox_table_dimensions">
@@ -1887,6 +2041,30 @@
         </widget>
        </item>
        <item>
+        <layout class="QHBoxLayout" name="hbox_table_save_load">
+         <item>
+          <widget class="QPushButton" name="push_table_load">
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
+           <property name="text">
+            <string>Load</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="push_table_save">
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
+           <property name="text">
+            <string>Save</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
         <spacer name="spacer_calibration_images">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -1954,6 +2132,8 @@
   <tabstop>double_thickness</tabstop>
   <tabstop>combo_units</tabstop>
   <tabstop>scroll_viewport</tabstop>
+  <tabstop>edit_snapshot_name</tabstop>
+  <tabstop>edit_table_name</tabstop>
   <tabstop>spin_table_w</tabstop>
   <tabstop>spin_table_h</tabstop>
   <tabstop>combo_table_border_color</tabstop>

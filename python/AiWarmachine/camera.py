@@ -415,8 +415,8 @@ class Camera(QtCore.QObject):
         else:
             return projected_2d_points_array
 
-    def save(self):
-        """Save the current camera settings and calibration.
+    def get_save_filepath(self):
+        """Get the filepath where the camera file would be saved.
 
         :return: Filepath.
         :rtype: str
@@ -432,10 +432,20 @@ class Camera(QtCore.QObject):
         capture_zoom = capture_properties_dict.get(common.get_capture_property_id("Zoom"))
         capture_focus = capture_properties_dict.get(common.get_capture_property_id("Focus"))
 
-        calibration_dir = common.get_calibration_dir()
+        camera_dir = common.get_saved_subdir("camera")
         name = re.sub('[^a-zA-Z0-9]', '_', self.name)
-        calibration_filename = f"{name}__{capture_width}x{capture_height}__z{capture_zoom}__f{capture_focus}.json"
-        calibration_filepath = f"{calibration_dir}/{calibration_filename}"
+        camera_filename = f"{name}__{capture_width}x{capture_height}__z{capture_zoom}__f{capture_focus}.json"
+        camera_filepath = f"{camera_dir}/{camera_filename}"
+
+        return camera_filepath
+
+    def save(self, filepath):
+        """Save the current camera settings and calibration.
+
+        :param filepath: The filepath to save the camera to.
+        :type filepath: str
+        """
+        capture_properties_dict = self.get_capture_properties_copy()
 
         data = {
             'name': self.name,
@@ -449,10 +459,8 @@ class Camera(QtCore.QObject):
             'tvec': self._tvec.tolist() if self._tvec is not None else None,
             'rvec': self._rvec.tolist() if self._rvec is not None else None,
         }
-        with open(calibration_filepath, 'w') as fid:
+        with open(filepath, 'w') as fid:
             fid.write(json.dumps(data, indent=2))
-
-        return calibration_filepath
 
     def load(self, camera_data, update_device_id=False):
         """Load the camera data into this one.
@@ -495,3 +503,15 @@ class Camera(QtCore.QObject):
                 self._capture_properties_dict.get(common.get_capture_property_id("Width")),
                 self._capture_properties_dict.get(common.get_capture_property_id("Height"))
             ]
+
+    def uncalibrate(self):
+        """Remove all calibration settings."""
+        self.stop()
+        self._mtx = None
+        self._dist = None
+        self._mtx_prime = None
+        self._roi = None
+        self._tvec = None
+        self._rvec = None
+        self.recalculate_undistort_mapping()
+        self.start()
