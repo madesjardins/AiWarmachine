@@ -22,6 +22,7 @@ import re
 from functools import partial
 from datetime import datetime
 import json
+import time
 
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import cv2 as cv
@@ -62,6 +63,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         self._table = game_table.GameTable()
         self._image_overlay = None
         self._overlay_need_update = True
+        self._previous_time = 0
         self._init_ui()
         self._init_connections()
         self.show()
@@ -75,6 +77,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.setLayout(layout)
 
         self.fill_current_camera_settings(default=True)
+        self.set_enabled_for_calibrated_camera()
 
     def _init_connections(self):
         """Initialize connections."""
@@ -324,6 +327,7 @@ class CalibrationDialog(QtWidgets.QDialog):
                 camera_frame.strides[0],
                 QtGui.QImage.Format.Format_BGR888
             )
+
             self.ui.edit_camera_effective_resolution.setText(info_str)
 
             if composite_overlay:
@@ -336,6 +340,11 @@ class CalibrationDialog(QtWidgets.QDialog):
         else:
             image = image.scaledToWidth(self.ui.scroll_viewport.size().width() - 20)
         self.ui.label_viewport_image.setPixmap(QtGui.QPixmap.fromImage(image))
+
+        time_delay = time.time() - self._previous_time
+        fps = 1.0 / max(0.0001, time_delay)
+        self._previous_time = time.time()
+        self.ui.edit_viewport_resolution.setText(f"{image.width()}x{image.height()} @ {fps:0.1f}")
 
     def get_selected_device_id(self):
         """Get the device id of the selected camera.
@@ -425,6 +434,7 @@ class CalibrationDialog(QtWidgets.QDialog):
             self.ui.push_delete_camera.setEnabled(True)
         else:
             self.ui.push_delete_camera.setEnabled(False)
+        self.set_enabled_for_calibrated_camera()
 
     @QtCore.pyqtSlot()
     def add_camera(self):
@@ -476,6 +486,7 @@ class CalibrationDialog(QtWidgets.QDialog):
                 self.ui.list_cameras.takeItem(self.ui.list_cameras.currentRow())
         except Exception:
             traceback.print_exc()
+        self.set_enabled_for_calibrated_camera()
 
     @QtCore.pyqtSlot(str)
     def set_camera_capture_resolution(self, resolution_str):
@@ -567,6 +578,8 @@ class CalibrationDialog(QtWidgets.QDialog):
             push_button.setIcon(QtGui.QIcon(pix))
             push_button.setIconSize(pix.rect().size())
 
+        self.set_enabled_for_calibrated_camera()
+
     @QtCore.pyqtSlot()
     def calibrate(self):
         """Calibrate the camera using the top, front and side views."""
@@ -602,6 +615,8 @@ class CalibrationDialog(QtWidgets.QDialog):
             print(f"Calibration error: {mean_error}")
         except Exception:
             traceback.print_exc()
+
+        self.set_enabled_for_calibrated_camera()
 
     @QtCore.pyqtSlot()
     def pose(self):
@@ -642,7 +657,13 @@ class CalibrationDialog(QtWidgets.QDialog):
         if current_camera is not None:
             self.pause_ticker()
             current_camera.uncalibrate()
+            for view_name in self._calibration_packages_dict.keys():
+                self._calibration_packages_dict[view_name] = None
+                push_button = getattr(self.ui, f"push_calibration_image_{view_name}")
+                push_button.setText(view_name.capitalize())
+                push_button.setIcon(QtGui.QIcon())
             self.start_ticker()
+        self.set_enabled_for_calibrated_camera()
 
     def get_checkerboard_3d_reference_points(self, use_checkerboard_thickness=True):
         """Get checkboard 3D reference points.
@@ -763,6 +784,7 @@ class CalibrationDialog(QtWidgets.QDialog):
             self.ui.list_cameras.setCurrentRow(self.ui.list_cameras.count() - 1)
 
         self._overlay_need_update = True
+        self.set_enabled_for_calibrated_camera()
 
     @QtCore.pyqtSlot(float)
     def update_table_transforms(self, _=0.0):
@@ -968,3 +990,23 @@ class CalibrationDialog(QtWidgets.QDialog):
 
         self.latest_image.save(filepath, quality=95)
         print(f"Snapshot saved to: '{filepath}'")
+
+    def set_enabled_for_calibrated_camera(self):
+        """Enable or disable widgets based on whether or not the current camera is calibrated."""
+        current_camera = self.get_current_camera()
+        is_calibrated = current_camera is not None and current_camera.is_calibrated()
+        is_posed = current_camera is not None and current_camera.is_posed()
+        num_calibration_images = sum([1 for _view_name in ['top', 'front', 'side'] if self._calibration_packages_dict[_view_name] is not None])
+        self.ui.combo_camera_capture_resolution.setEnabled(not is_calibrated)
+        self.ui.slider_camera_focus.setEnabled(not is_calibrated)
+        self.ui.slider_camera_zoom.setEnabled(not is_calibrated)
+        self.ui.push_calibrate.setEnabled(not is_calibrated and num_calibration_images == 3)
+        self.ui.push_calibrate.setText("Calibrated" if is_calibrated else "Calibrate")
+        self.ui.push_uncalibrate.setEnabled(is_calibrated)
+        self.ui.push_pose.setEnabled(is_calibrated and self._calibration_packages_dict['pose'] is not None)
+        self.ui.push_pose.setText("Posed" if is_posed else "Pose")
+        self.ui.push_calibration_image_top.setEnabled(not is_calibrated)
+        self.ui.push_calibration_image_front.setEnabled(not is_calibrated)
+        self.ui.push_calibration_image_side.setEnabled(not is_calibrated)
+        self.ui.push_calibration_image_pose.setEnabled(is_calibrated)
+        self.ui.combo_camera_device_id.setEnabled(not is_calibrated)
