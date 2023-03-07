@@ -22,6 +22,8 @@ You can then call get_frame() to get the latest frame available.
 
 import copy
 import time
+import json
+import re
 
 from PyQt6 import QtCore
 import numpy as np
@@ -29,6 +31,7 @@ import cv2 as cv
 
 from . import constants
 from . import camera_feed
+from . import common
 
 
 class Camera(QtCore.QObject):
@@ -36,19 +39,21 @@ class Camera(QtCore.QObject):
 
     def __init__(
         self,
-        name,
+        name="",
         model_name="",
         device_id=0,
         capture_properties_dict=None,
-        int_mat=None,
-        dist_coeffs=None,
+        mtx=None,
+        dist=None,
+        mtx_prime=None,
+        roi=None,
         tvec=None,
         rvec=None,
         debug=False
     ):
         """Initialize.
 
-        :param name: A unique camera name to identify it.
+        :param name: A name to describe the camera.
         :type name: str
 
             **Example: 'Top View'**
@@ -64,17 +69,25 @@ class Camera(QtCore.QObject):
         :param capture_properties_dict: The capture properties dictionary. (None)
         :type capture_properties_dict: int
 
-        :param int_mat: Intrinsic camera matrix. (None)
-        :type int_mat: Numpy array 3x3
+        :param mtx: Intrinsic camera 3x3 matrix. (None)
+        :type mtx: :class:`numpy.ndarray`
 
-        :param dist_coeffs: Distortion Coefficients. (None)
-        :type dist_coeffs: Numpy array 1xX
+        :param dist: Distortion Coefficients. (None)
+        :type dist: :class:`numpy.ndarray`
+
+        :param mtx_prime: Optimal new intrinsic camera 3x3 matrix. (None)
+        :type mtx_prime: :class:`numpy.ndarray`
+
+        :param roi: Region of interest when using undistorted image and prime matrix. (None)
+        :type roi: tuple of int
 
         :param tvec: Translation vector. (None)
-        :type tvec: Numpy array 1x3
+        :type tvec: :class:`ndarray`
 
         :param rvec: Rodrigues rotation vector. (None)
-        :type rvec: Numpy Array 1x3
+        :type rvec: :class:`ndarray`
+
+        :param
 
         :param debug: Whether or not to print debug messages. (False)
         :type debug: bool
@@ -82,13 +95,15 @@ class Camera(QtCore.QObject):
         super().__init__()
 
         # basic info
-        self._name = name
-        self._model_name = model_name
+        self.name = name
+        self.model_name = model_name
         self.debug = debug
 
         # calibration params
-        self._int_mat = int_mat
-        self._dist_coeffs = dist_coeffs
+        self._mtx = mtx
+        self._dist = dist
+        self._mtx_prime = mtx_prime
+        self._roi = roi
         self._tvec = tvec
         self._rvec = rvec
 
@@ -100,6 +115,8 @@ class Camera(QtCore.QObject):
         self._camera_feed = camera_feed.CameraFeed(self, debug=self.debug)
         self._camera_feed.frame_grabbed.connect(self.new_frame)
 
+        self.recalculate_undistort_mapping()
+
         # frame buffer
         self._reset_framebuffer()
 
@@ -107,6 +124,18 @@ class Camera(QtCore.QObject):
         self.current_fps = 0.0
 
         self._effective_resolution = [None, None]
+
+    def recalculate_undistort_mapping(self):
+        """Recalculate undistort mapping based on current calibration."""
+        if self._mtx is not None and self._mtx_prime is not None and self._roi is not None:
+            image_resolution = (
+                self._capture_properties_dict.get(common.get_capture_property_id("Width"), constants.DEFAULT_CAPTURE_WIDTH),
+                self._capture_properties_dict.get(common.get_capture_property_id("Height"), constants.DEFAULT_CAPTURE_HEIGHT)
+            )
+            self._mapx, self._mapy = cv.initUndistortRectifyMap(self._mtx, self._dist, None, self._mtx_prime, image_resolution, 5)
+        else:
+            self._mapx = None
+            self._mapy = None
 
     def _reset_framebuffer(self):
         """Reset the framebuffer and framebuffer index."""
@@ -150,21 +179,25 @@ class Camera(QtCore.QObject):
             # update actual capture resolution
             self._effective_resolution = [frame.shape[1], frame.shape[0]]
 
-    def get_frame(self, show_info=False):
+    def get_frame(self, show_info=False, return_info=False):
         """Get the latest frame available.
 
         :param show_info: Print resolution and fps on the image. (False)
         :type show_info: bool
+
+        :param return_info: If set to True, will also return info string "{width}x{height} @ {fps}fps" along with the frame as a tuple. (False)
+        :type return_info: bool
 
         :return: The frame.
         :rtype: :class:`numpy.ndarray`
         """
         if self._framebuffer_index >= 0:
             frame = self._framebuffer_list[self._framebuffer_index]
+            info_str = f'{frame.shape[1]}x{frame.shape[0]} @ {self.current_fps:0.1f}fps'
             if show_info:
-                return cv.putText(
+                info_frame = cv.putText(
                     frame,
-                    f'{frame.shape[1]}x{frame.shape[0]} @ {self.current_fps:0.1f}fps',
+                    info_str,
                     (50, 50),
                     cv.FONT_HERSHEY_SIMPLEX,
                     1,
@@ -172,19 +205,22 @@ class Camera(QtCore.QObject):
                     2,
                     cv.LINE_AA
                 )
+                if return_info:
+                    return info_frame, info_str
+                else:
+                    return info_frame
+
+            elif return_info:
+                return frame, info_str
+
             else:
                 return frame
 
+        elif return_info:
+            return None, None
+
         else:
             return None
-
-    def get_name(self):
-        """Get this camera name.
-
-        :return: Camera name.
-        :rtype: str
-        """
-        return self._name
 
     @property
     def device_id(self):
@@ -248,3 +284,234 @@ class Camera(QtCore.QObject):
         :rtype: bool
         """
         return self._camera_feed.isRunning()
+
+    def is_calibrated(self):
+        """Whether the camera is calibrated or not.
+
+        :return: True if camera is calibrated.
+        :rtype: bool
+        """
+        return (
+            self._mtx is not None and
+            self._dist is not None and
+            self._mtx_prime is not None and
+            self._roi is not None and
+            self._mapx is not None and
+            self._mapy is not None
+        )
+
+    def is_posed(self):
+        """Whether the camera is calibrated and posed.
+
+        :return: True if camera is calibrated and posed.
+        :rtype: bool
+        """
+        return (
+            self.is_calibrated and
+            self._rvec is not None and
+            self._tvec is not None
+        )
+
+    def calibrate(self, checkerboard_3d_points_3_list, checkerboard_2d_points_3_list, image_resolution):
+        """Calculate and set camera matrix, ROI and mapping function to undistort images.
+
+        :param checkerboard_3d_points_3_list: Three lists (one for each calibration view) of array of 3d points.
+        :type checkerboard_3d_points_3_list: list of :class:`numpy.ndarray`
+
+        :param checkerboard_2d_points_3_list: Three lists (one for each calibration view) of array of corresponding 2d points.
+        :type checkerboard_2d_points_3_list: list of :class:`numpy.ndarray`
+
+        :param image_resolution: The image resolution as (width, height).
+        :type image_resolution: tupple of int
+
+        :return: Mean reprojection error.
+        :rtype: float
+        """
+        ret, mtx, dist, rvecs_list, tvecs_list = cv.calibrateCamera(
+            checkerboard_3d_points_3_list,
+            checkerboard_2d_points_3_list,
+            image_resolution,
+            None,
+            None
+        )
+
+        if not ret:
+            raise RuntimeError("Unable to calibrate camera with these images.")
+
+        self._mtx = mtx
+        self._dist = dist
+        self._mtx_prime, self._roi = cv.getOptimalNewCameraMatrix(self._mtx, self._dist, image_resolution, 1, image_resolution)
+        self._mapx, self._mapy = cv.initUndistortRectifyMap(self._mtx, self._dist, None, self._mtx_prime, image_resolution, 5)
+        mean_error = 0
+        for i in range(len(checkerboard_3d_points_3_list)):
+            projected_2d_points_array, _ = cv.projectPoints(checkerboard_3d_points_3_list[i], rvecs_list[i], tvecs_list[i], self._mtx, self._dist)
+            error = cv.norm(checkerboard_2d_points_3_list[i], projected_2d_points_array, cv.NORM_L2) / len(projected_2d_points_array)
+            mean_error += error
+
+        return mean_error / len(checkerboard_3d_points_3_list)
+
+    def undistort(self, frame, interpolation="Linear"):
+        """Undistort image.
+
+        :param frame: The image.
+        :type frame: :class:`numpy.ndarray`
+
+        :param interpolation: Interpolation method in ['Nearest', 'Linear', 'Cubic', 'Lanczos4']. ('Linear')
+        :type interpolation: int
+        """
+        dst = cv.remap(frame, self._mapx, self._mapy, constants.INTERPOLATION_METHOD_NAME_DICT.get(interpolation, cv.INTER_LINEAR))
+        x, y, w, h = self._roi
+        return dst[y:y + h, x:x + w].copy()
+
+    def pose(self, checkerboard_3d_points_list, checkerboard_2d_points_list):
+        """Calculate the pose of the camera for a frame.
+
+        :param checkerboard_3d_points_3_list: Array of 3d points.
+        :type checkerboard_3d_points_3_list: :class:`numpy.ndarray`
+
+        :param checkerboard_2d_points_3_list: Array of corresponding 2d points.
+        :type checkerboard_2d_points_3_list: :class:`numpy.ndarray`
+        """
+        ret, rvec, tvec = cv.solvePnP(
+            checkerboard_3d_points_list,
+            checkerboard_2d_points_list,
+            self._mtx,
+            self._dist
+        )
+        if not ret:
+            raise RuntimeError("Unable to determine camera pose.")
+
+        self._rvec = rvec
+        self._tvec = tvec
+
+    def project_points(self, points_array, undistorted=False, as_integers=False):
+        """Project 3d points into 2d image space.
+
+        :param points_array: Array of 3d points.
+        :type points_array: :class:`numpy.ndarray`
+
+        :param undistorted: Whether or not to return 2d coordinates of the undistorted image. (False)
+        :type undistorted: bool
+
+        :param as_integers: Whether or not to convert to int instead of float. (False)
+        :type as_integers: bool
+        """
+        projected_2d_points_array, _ = cv.projectPoints(
+            points_array,
+            self._rvec,
+            self._tvec,
+            self._mtx_prime if undistorted else self._mtx,
+            None if undistorted else self._dist
+        )
+
+        if undistorted:
+            x, y, _, _ = self._roi
+            for index in range(len(projected_2d_points_array)):
+                projected_2d_points_array[index][0][0] -= x
+                projected_2d_points_array[index][0][1] -= y
+
+        if as_integers:
+            return (np.rint(projected_2d_points_array)).astype(int)
+        else:
+            return projected_2d_points_array
+
+    def get_save_filepath(self):
+        """Get the filepath where the camera file would be saved.
+
+        :return: Filepath.
+        :rtype: str
+
+        :raise: RuntimeError if camera does not have a name.
+        """
+        if not self.name:
+            raise RuntimeError("Camera does not have a name.")
+
+        capture_properties_dict = self.get_capture_properties_copy()
+        capture_width = capture_properties_dict.get(common.get_capture_property_id("Width"))
+        capture_height = capture_properties_dict.get(common.get_capture_property_id("Height"))
+        capture_zoom = capture_properties_dict.get(common.get_capture_property_id("Zoom"))
+        capture_focus = capture_properties_dict.get(common.get_capture_property_id("Focus"))
+
+        camera_dir = common.get_saved_subdir("camera")
+        name = re.sub('[^a-zA-Z0-9]', '_', self.name)
+        camera_filename = f"{name}__{capture_width}x{capture_height}__z{capture_zoom}__f{capture_focus}.json"
+        camera_filepath = f"{camera_dir}/{camera_filename}"
+
+        return camera_filepath
+
+    def save(self, filepath):
+        """Save the current camera settings and calibration.
+
+        :param filepath: The filepath to save the camera to.
+        :type filepath: str
+        """
+        capture_properties_dict = self.get_capture_properties_copy()
+
+        data = {
+            'name': self.name,
+            'device_id': self.device_id,
+            'model_name': self.model_name,
+            'capture_properties_dict': capture_properties_dict,
+            'mtx': self._mtx.tolist() if self._mtx is not None else None,
+            'dist': self._dist.tolist() if self._dist is not None else None,
+            'mtx_prime': self._mtx_prime.tolist() if self._mtx_prime is not None else None,
+            'roi': self._roi,
+            'tvec': self._tvec.tolist() if self._tvec is not None else None,
+            'rvec': self._rvec.tolist() if self._rvec is not None else None,
+        }
+        with open(filepath, 'w') as fid:
+            fid.write(json.dumps(data, indent=2))
+
+    def load(self, camera_data, update_device_id=False):
+        """Load the camera data into this one.
+
+        :param camera_data: Capture properties, calibration and pose data in the same format as the save produces.
+        :type camera_data: dict
+
+        :param update_device_id: Whether to update the device id or not. (False)
+        :type update_device_id: bool
+        """
+        self.stop()
+        self.name = camera_data['name']
+        self.model_name = camera_data['model_name']
+        for property_id, property_value in camera_data['capture_properties_dict'].items():
+            self.set_capture_property(property_id, property_value)
+
+        self._mtx = camera_data['mtx']
+        self._dist = camera_data['dist']
+        self._mtx_prime = camera_data['mtx_prime']
+        self._roi = camera_data['roi']
+        self._tvec = camera_data['tvec']
+        self._rvec = camera_data['rvec']
+        self.recalculate_undistort_mapping()
+
+        if update_device_id:
+            self.device_id = camera_data['device_id']
+
+        self.start()
+
+    def get_undistorted_resolution(self):
+        """Get the width and height of undistorted images.
+
+        :return: Width and height.
+        :rtype: list
+        """
+        if self._roi is not None:
+            return self._roi[2:]
+        else:
+            return [
+                self._capture_properties_dict.get(common.get_capture_property_id("Width")),
+                self._capture_properties_dict.get(common.get_capture_property_id("Height"))
+            ]
+
+    def uncalibrate(self):
+        """Remove all calibration settings."""
+        self.stop()
+        self._mtx = None
+        self._dist = None
+        self._mtx_prime = None
+        self._roi = None
+        self._tvec = None
+        self._rvec = None
+        self.recalculate_undistort_mapping()
+        self.start()
