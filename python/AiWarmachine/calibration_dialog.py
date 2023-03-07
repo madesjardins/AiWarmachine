@@ -133,7 +133,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.ui.push_table_reset.clicked.connect(self.reset_table_transforms)
         self.ui.push_table_save.clicked.connect(self.table_save)
         self.ui.push_table_load.clicked.connect(self.table_load)
-        self.ui.edit_camera_name.textEdited.connect(self.set_table_name)
+        self.ui.edit_table_name.textEdited.connect(self.set_table_name)
 
         # snapshot
         self.ui.push_snapshot_save.clicked.connect(self.snapshot_save)
