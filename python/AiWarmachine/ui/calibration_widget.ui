@@ -1186,7 +1186,7 @@
             <double>9999.000000000000000</double>
            </property>
            <property name="value">
-            <double>0.350000000000000</double>
+            <double>0.500000000000000</double>
            </property>
           </widget>
          </item>
@@ -2002,7 +2002,7 @@
             <double>-99.000000000000000</double>
            </property>
            <property name="singleStep">
-            <double>0.100000000000000</double>
+            <double>0.010000000000000</double>
            </property>
           </widget>
          </item>
@@ -2022,7 +2022,7 @@
             <double>-99.000000000000000</double>
            </property>
            <property name="singleStep">
-            <double>0.100000000000000</double>
+            <double>0.010000000000000</double>
            </property>
           </widget>
          </item>
@@ -2035,7 +2035,7 @@
             <double>-99.000000000000000</double>
            </property>
            <property name="singleStep">
-            <double>0.100000000000000</double>
+            <double>0.010000000000000</double>
            </property>
           </widget>
          </item>
@@ -2048,7 +2048,7 @@
             <double>-99.000000000000000</double>
            </property>
            <property name="singleStep">
-            <double>0.100000000000000</double>
+            <double>0.010000000000000</double>
            </property>
           </widget>
          </item>
@@ -2061,7 +2061,7 @@
             <double>-99.000000000000000</double>
            </property>
            <property name="singleStep">
-            <double>0.100000000000000</double>
+            <double>0.010000000000000</double>
            </property>
           </widget>
          </item>
@@ -2074,7 +2074,7 @@
             <double>-99.000000000000000</double>
            </property>
            <property name="singleStep">
-            <double>0.100000000000000</double>
+            <double>0.010000000000000</double>
            </property>
           </widget>
          </item>

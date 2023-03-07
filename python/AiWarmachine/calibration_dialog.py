@@ -71,7 +71,7 @@ class CalibrationDialog(QtWidgets.QDialog):
     def _init_ui(self):
         """Initialize the UI."""
         self.ui = uic.loadUi(os.path.join(os.path.dirname(__file__), "ui", "calibration_widget.ui"))
-        self.setWindowTitle("Camera Calibration")
+        self.setWindowTitle("Calibration")
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.ui)
         self.setLayout(layout)
@@ -716,7 +716,7 @@ class CalibrationDialog(QtWidgets.QDialog):
                     )
                     if answer != "Yes":
                         return
-                current_camera.save()
+                current_camera.save(filepath)
                 print(f"Current camera saved to : '{filepath}'")
             except Exception as err:
                 error_message = str(err)

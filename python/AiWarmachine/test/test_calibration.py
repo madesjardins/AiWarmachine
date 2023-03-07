@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-"""Test camera calibration dialog to setup your cameras."""
+"""Test calibration dialog to setup your cameras and table."""
 import sys
 
 from PyQt6 import QtWidgets, QtGui, QtCore
