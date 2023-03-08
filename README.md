@@ -10,7 +10,7 @@ A Warmachine (Privateer Press, MKIV) tabletop wargaming companion and nemesis ap
 6. Download and unzip latest release version of AiWarmachine.
 7. Download additional files from https://drive.google.com/drive/folders/1DJvlq9WAmmEEuNAgDuJHA60bm_lzKuBN?usp=share_link
 
-Note: I'm developping using 3.11 but it might work with previous python version as well.
+Note: I'm developping using 3.11 but it might work with previous python versions as well.
 
 # Launch
 At the moment, only an alpha version of the calibration dialog is available to test if all installation steps were done.
