@@ -226,6 +226,11 @@
            </item>
            <item>
             <property name="text">
+             <string>2304x1536</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
              <string>2560x1440</string>
             </property>
            </item>
