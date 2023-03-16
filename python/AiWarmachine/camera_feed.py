@@ -158,7 +158,10 @@ class CameraFeed(QtCore.QThread):
 
             self._update_capture_if_needed()
 
-            cap_ret, frame = self._capture.read()
+            try:
+                cap_ret, frame = self._capture.read()
+            except Exception:
+                cap_ret = None
 
             if not cap_ret:
                 # Problem while reading, put red frame in BGR888 format

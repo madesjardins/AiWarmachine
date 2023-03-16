@@ -16,12 +16,16 @@
 #
 """Various constants."""
 
+import sys
+
 from PyQt6 import QtWidgets
 import cv2 as cv
 
+IS_LINUX = sys.platform.startswith('linux')
+
 CRITERIA = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
-DEFAULT_CAPTURE_API = cv.CAP_DSHOW
+DEFAULT_CAPTURE_API = cv.CAP_V4L2 if IS_LINUX else cv.CAP_DSHOW
 
 DEFAULT_CAPTURE_WIDTH = 1920
 DEFAULT_CAPTURE_HEIGHT = 1080
@@ -35,7 +39,7 @@ DEFAULT_CAPTURE_PROPERTIES_DICT = {
     cv.CAP_PROP_AUTOFOCUS: 1,  # 1 = Off
     cv.CAP_PROP_FOCUS: 0,  # small = far, big = near
     cv.CAP_PROP_AUTO_EXPOSURE: 1,  # 1 = Off
-    cv.CAP_PROP_EXPOSURE: -6,
+    cv.CAP_PROP_EXPOSURE: 250 if IS_LINUX else -6,
     cv.CAP_PROP_FOURCC: cv.VideoWriter_fourcc(*'MJPG'),
     cv.CAP_PROP_BRIGHTNESS: 128,
     cv.CAP_PROP_CONTRAST: 128,
@@ -44,6 +48,9 @@ DEFAULT_CAPTURE_PROPERTIES_DICT = {
     cv.CAP_PROP_SHARPNESS: 128,
     cv.CAP_PROP_ZOOM: 100,
 }
+if IS_LINUX:
+    # V4L2 does not have focus implemented
+    del DEFAULT_CAPTURE_PROPERTIES_DICT[cv.CAP_PROP_FOCUS]
 
 CAPTURE_PROPERTIES_NAMES_DICT = {
     cv.CAP_PROP_HW_ACCELERATION: "Hardware acceleration",
