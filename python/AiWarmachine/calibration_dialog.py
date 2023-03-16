@@ -79,6 +79,13 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.fill_current_camera_settings(default=True)
         self.set_enabled_for_calibrated_camera()
 
+        if constants.IS_LINUX:
+            self.ui.slider_camera_focus.hide()
+            self.ui.label_camera_focus.hide()
+            self.ui.spin_camera_exposure.setRange(3, 2047)
+            self.ui.spin_camera_exposure.setSingleStep(25)
+            self.ui.spin_camera_exposure.setValue(250)
+
     def _init_connections(self):
         """Initialize connections."""
         self.ui.push_quit.clicked.connect(self.close)
@@ -395,9 +402,10 @@ class CalibrationDialog(QtWidgets.QDialog):
             self.ui.spin_camera_exposure.setValue(
                 current_camera.get_capture_property(common.get_capture_property_id("Exposure"))
             )
-            self.ui.slider_camera_focus.setValue(
-                current_camera.get_capture_property(common.get_capture_property_id("Focus"))
-            )
+            if not constants.IS_LINUX:
+                self.ui.slider_camera_focus.setValue(
+                    current_camera.get_capture_property(common.get_capture_property_id("Focus"))
+                )
             self.ui.slider_camera_zoom.setValue(
                 current_camera.get_capture_property(common.get_capture_property_id("Zoom"))
             )
