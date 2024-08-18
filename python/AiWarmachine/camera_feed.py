@@ -178,3 +178,5 @@ class CameraFeed(QtCore.QThread):
 
             if self._send_signal:
                 self.frame_grabbed.emit(frame, cap_ret)
+
+            # QtCore.QCoreApplication.processEvents()

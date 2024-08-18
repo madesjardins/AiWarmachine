@@ -23,6 +23,7 @@ from functools import partial
 from datetime import datetime
 import json
 import time
+from pprint import pprint
 
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import cv2 as cv
@@ -33,10 +34,15 @@ from . import common
 from . import constants
 from . import tick_generator
 from . import game_table
+from . import model_detection
+from . import viewport_label
+from . import qr_detection
 
 
 class CalibrationDialog(QtWidgets.QDialog):
     """Calibration dialog is used to calibrate your cameras."""
+
+    analyze_qr_image = QtCore.pyqtSignal(object, int, int, int, int)
 
     def __init__(self, parent=None):
         """Initialize.
@@ -62,8 +68,17 @@ class CalibrationDialog(QtWidgets.QDialog):
         self._in_calibration = False
         self._table = game_table.GameTable()
         self._image_overlay = None
+        self._qr_detection_overlay = None
         self._overlay_need_update = True
         self._previous_time = 0
+        self._model_dectector = None
+        # TEMP Commented !!
+        # self._init_model_detection()
+        self._detected_models_list = []
+        self._table_corner_points_list = []
+        self._qr_detector = qr_detection.QRDetector()
+        self.latest_qr_detection_data = {}
+        self._skip_for_n_ticks = 0
         self._init_ui()
         self._init_connections()
         self.show()
@@ -75,6 +90,9 @@ class CalibrationDialog(QtWidgets.QDialog):
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.ui)
         self.setLayout(layout)
+
+        self.ui.label_viewport_image = viewport_label.ViewportLabel(self.ui.scroll_viewport_widget)
+        self.ui.scroll_viewport_widget.layout().addWidget(self.ui.label_viewport_image)
 
         self.fill_current_camera_settings(default=True)
         self.set_enabled_for_calibrated_camera()
@@ -147,6 +165,36 @@ class CalibrationDialog(QtWidgets.QDialog):
 
         # tick
         self._ticker.tick.connect(self.tick)
+
+        # model detection
+        # self.ui.check_model_detection.clicked.connect(self._start_stop_model_detection)
+
+        # QR Detection
+        self._qr_detector.latest_data_ready.connect(self.update_latest_qr_detection_data)
+        self.analyze_qr_image.connect(self._qr_detector.set_image)
+
+    @QtCore.pyqtSlot(dict, int, int, int, int)
+    def update_latest_qr_detection_data(self, latest_data, offset_x, offset_y, width, height):
+        """Update latest qr detection data."""
+        if len(latest_data) != len(self.latest_qr_detection_data):  # TODO: test center diff > epsilon
+            self.latest_qr_detection_data = latest_data
+            image_size = QtCore.QSize(width, height)
+            qr_detection_overlay = QtGui.QImage(image_size, QtGui.QImage.Format.Format_ARGB32_Premultiplied)
+            painter = QtGui.QPainter(qr_detection_overlay)
+            painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
+            painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
+            painter.fillRect(qr_detection_overlay.rect(), QtCore.Qt.GlobalColor.transparent)
+            detect_brush = QtGui.QBrush()
+            painter.setBrush(detect_brush)
+            detect_pen = QtGui.QPen(QtCore.Qt.GlobalColor.red, 4, QtCore.Qt.PenStyle.SolidLine)
+            painter.setPen(detect_pen)
+            for qr_message, qr_data in self.latest_qr_detection_data.items():
+                for vert in qr_data['bounds']:
+                    painter.drawPoint(int(offset_x + vert[0]), int(offset_y + vert[1]))
+            painter.end()
+            self._qr_detection_overlay = qr_detection_overlay
+        else:
+            self.latest_qr_detection_data = latest_data
 
     def update_current_camera_item_label(self):
         """Update the current camera item's label."""
@@ -240,6 +288,8 @@ class CalibrationDialog(QtWidgets.QDialog):
         try:
             self._ticker.stop()
             self._ticker.wait()
+            self._qr_detector.stop()
+            self._qr_detector.wait()
             for _, camera_obj in self._cameras_dict.items():
                 camera_obj.release()
         except Exception:
@@ -262,8 +312,8 @@ class CalibrationDialog(QtWidgets.QDialog):
         self._ticker.stop()
         self._ticker.wait()
 
-    @QtCore.pyqtSlot(float)
-    def tick(self, tick_time):
+    @QtCore.pyqtSlot(float, float)
+    def tick(self, running_time, time_interval):
         """Refresh viewport.
 
         :param tick_time: Time since the begining of the tick start.
@@ -273,8 +323,16 @@ class CalibrationDialog(QtWidgets.QDialog):
         if current_camera is None:
             return
 
+        if self._skip_for_n_ticks > 0:
+            self._skip_for_n_ticks -= 1
+            return
+
+        start_process = time.time()
+
         composite_overlay = False
         camera_frame, info_str = current_camera.get_frame(return_info=True)
+
+        # -- NO IMAGE in FEED --
         if camera_frame is None:
             frame = common.get_frame_with_text("Please wait" + "." * (int(self._animation_frame / 30) % 4))
             image = QtGui.QImage(
@@ -288,8 +346,11 @@ class CalibrationDialog(QtWidgets.QDialog):
             if self.ui.check_display_undistorted.isChecked():
                 self.ui.check_display_undistorted.setCheckState(QtCore.Qt.CheckState.Unchecked)
         else:
+
+            # -- VALID IMAGE FEED --
             self._animation_frame = 0
 
+            # -- IN CALIBRATION --
             if self._in_calibration:
                 gray = cv.cvtColor(camera_frame, cv.COLOR_BGR2GRAY)
 
@@ -308,25 +369,30 @@ class CalibrationDialog(QtWidgets.QDialog):
                     )
                 if self.ui.check_display_undistorted.isChecked():
                     self.ui.check_display_undistorted.setCheckState(QtCore.Qt.CheckState.Unchecked)
+
+            # -- CALIBRATED -> UNDISTORT IMAGE --
             elif current_camera.is_calibrated():
                 if not self.ui.check_display_undistorted.isChecked():
                     self.ui.check_display_undistorted.setCheckState(QtCore.Qt.CheckState.Checked)
                 camera_frame = current_camera.undistort(camera_frame)
 
-                if current_camera.is_posed():
-                    composite_overlay = True
-                    # recreate overlay if needed
-                    if (
-                        self._overlay_need_update or
-                        self._image_overlay is None or
-                        self._image_overlay.width() != camera_frame.shape[1] or
-                        self._image_overlay.height() != camera_frame.shape[0]
-                    ):
-                        self.update_axes_and_table_layer(camera_frame.shape[1], camera_frame.shape[0])
+                # NO OVERLAY ANYMORE
+                # if current_camera.is_posed():
+                #     composite_overlay = True
+                #     # recreate overlay if needed
+                #     if (
+                #         self._overlay_need_update or
+                #         self._image_overlay is None or
+                #         self._image_overlay.width() != camera_frame.shape[1] or
+                #         self._image_overlay.height() != camera_frame.shape[0]
+                #     ):
+                #         self.update_axes_and_table_layer(camera_frame.shape[1], camera_frame.shape[0])
 
+            # -- RESET DISTORTION CHECK --
             elif self.ui.check_display_undistorted.isChecked():
                 self.ui.check_display_undistorted.setCheckState(QtCore.Qt.CheckState.Unchecked)
 
+            # -- STORE LATEST IMAGE as QIMAGE--
             self.latest_image = QtGui.QImage(
                 camera_frame,
                 camera_frame.shape[1],
@@ -337,8 +403,41 @@ class CalibrationDialog(QtWidgets.QDialog):
 
             self.ui.edit_camera_effective_resolution.setText(info_str)
 
-            if composite_overlay:
-                image = common.composite_images(self.latest_image, self._image_overlay)
+            # -- QR DETECTOR --
+            if self.ui.check_qr_detection.isChecked():
+                min_x = 0  # min([_p.x() for _p in self._table_corner_points_list])
+                min_y = 0  # min([_p.y() for _p in self._table_corner_points_list])
+                max_x = camera_frame.shape[1] - 1  # max([_p.x() for _p in self._table_corner_points_list])
+                max_y = camera_frame.shape[0] - 1  # max([_p.y() for _p in self._table_corner_points_list])
+
+                min_x = int(min(max(0, min_x), camera_frame.shape[1] - 1))
+                min_y = int(min(max(0, min_y), camera_frame.shape[0] - 1))
+                max_x = int(min(max(0, max_x), camera_frame.shape[1] - 1))
+                max_y = int(min(max(0, max_y), camera_frame.shape[0] - 1))
+
+                self.analyze_qr_image.emit(cv.cvtColor(camera_frame, cv.COLOR_BGR2GRAY), min_x, min_y, max_x, max_y)
+                if not self._qr_detector.is_running():
+                    self._qr_detector.start()
+
+                if self.latest_qr_detection_data:
+                    composite_overlay = True
+
+            else:
+                self._qr_detector.stop()
+                self._qr_detector.wait()
+                self._qr_detector.reset()
+                self.latest_qr_detection_data = {}
+                composite_overlay = False
+
+            if (
+                composite_overlay and
+                self.ui.check_qr_detection.isChecked() and
+                self.latest_qr_detection_data and
+                self._qr_detection_overlay is not None
+            ):
+                # image = self.latest_image
+                image = common.composite_images(self.latest_image, self._qr_detection_overlay)
+
             else:
                 image = self.latest_image
 
@@ -346,12 +445,19 @@ class CalibrationDialog(QtWidgets.QDialog):
             self.ui.label_viewport_image.resize(image.width(), image.height())
         else:
             image = image.scaledToWidth(self.ui.scroll_viewport.size().width() - 20)
-        self.ui.label_viewport_image.setPixmap(QtGui.QPixmap.fromImage(image))
 
+        # Show image in viewport
+        self.ui.label_viewport_image.setPixmap(QtGui.QPixmap.fromImage(image))
+        self.ui.label_viewport_image.repaint()
         time_delay = time.time() - self._previous_time
         fps = 1.0 / max(0.0001, time_delay)
         self._previous_time = time.time()
         self.ui.edit_viewport_resolution.setText(f"{image.width()}x{image.height()} @ {fps:0.1f}")
+
+        # skip next frame is this one took too much time
+        process_time_x2 = 2 * (time.time() - start_process)
+        if process_time_x2 > time_interval:
+            self.skip_for_n_ticks = int(process_time_x2 / time_interval)
 
     def get_selected_device_id(self):
         """Get the device id of the selected camera.
@@ -906,7 +1012,7 @@ class CalibrationDialog(QtWidgets.QDialog):
             # table border
             table_corners_list = self._table.get_corners()
             projected_points = current_camera.project_points(table_corners_list, undistorted=True, as_integers=True)
-            table_corner_points_list = [
+            self._table_corner_points_list = [
                 QtCore.QPointF(*projected_points[0].ravel()),
                 QtCore.QPointF(*projected_points[1].ravel()),
                 QtCore.QPointF(*projected_points[2].ravel()),
@@ -915,7 +1021,7 @@ class CalibrationDialog(QtWidgets.QDialog):
             ]
             pen.setColor(self._table.color)
             painter.setPen(pen)
-            painter.drawPolyline(table_corner_points_list)
+            painter.drawPolyline(self._table_corner_points_list)
 
             painter.end()
 
@@ -989,14 +1095,14 @@ class CalibrationDialog(QtWidgets.QDialog):
         name = re.sub("[^a-zA-Z0-9_]", "_", self.ui.edit_snapshot_name.text())
         snapshot_dir_path = common.get_saved_subdir('snapshot')
         if name:
-            filepath = f"{snapshot_dir_path}/{name}/{name}__{timestamp}.jpg"
+            filepath = f"{snapshot_dir_path}/{name}/{name}__{timestamp}.png"
         else:
-            filepath = f"{snapshot_dir_path}/{daystamp}/{timestamp}.jpg"
+            filepath = f"{snapshot_dir_path}/{daystamp}/{timestamp}.png"
 
         if not os.path.exists(os.path.dirname(filepath)):
             os.makedirs(os.path.dirname(filepath))
 
-        self.latest_image.save(filepath, quality=95)
+        self.latest_image.save(filepath)  # , quality=95)
         print(f"Snapshot saved to: '{filepath}'")
 
     def set_enabled_for_calibrated_camera(self):
@@ -1018,3 +1124,26 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.ui.push_calibration_image_side.setEnabled(not is_calibrated)
         self.ui.push_calibration_image_pose.setEnabled(is_calibrated)
         self.ui.combo_camera_device_id.setEnabled(not is_calibrated)
+
+    def _init_model_detection(self):
+        """Initialize model detection."""
+        print("Initializing the model detector...")
+        try:
+            self._model_dectector = model_detection.ModelDetector(
+                trained_model_path=os.getenv('TRAINED_MODEL_DETECTION_PATH'),
+                label_map_path=os.getenv('LABEL_MAP_PATH'),
+            )
+        except Exception:
+            print("Failed to initialize model detector:")
+            traceback.print_exc()
+        else:
+            print(f"Model detector initialized successfully. [{'Using' if self._model_dectector.is_using_gpu() else 'No'} GPU]")
+
+    @QtCore.pyqtSlot()
+    def _start_stop_model_detection(self):
+        if self._model_dectector is None:
+            self.ui.check_model_detection.setCheckState(QtCore.Qt.CheckState.Unchecked)
+        elif self.ui.check_model_detection.isChecked():
+            self._model_dectector.start()
+        else:
+            self._model_dectector.stop()

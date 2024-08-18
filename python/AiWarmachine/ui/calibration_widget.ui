@@ -1235,7 +1235,7 @@
             <double>0.010000000000000</double>
            </property>
            <property name="value">
-            <double>1.073900000000000</double>
+            <double>1.074300000000000</double>
            </property>
           </widget>
          </item>
@@ -1364,7 +1364,7 @@
             <x>0</x>
             <y>0</y>
             <width>625</width>
-            <height>813</height>
+            <height>790</height>
            </rect>
           </property>
           <property name="sizePolicy">
@@ -1389,47 +1389,12 @@
            <property name="bottomMargin">
             <number>0</number>
            </property>
-           <item>
-            <widget class="QLabel" name="label_viewport_image">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
           </layout>
          </widget>
         </widget>
        </item>
        <item>
         <layout class="QGridLayout" name="grid_display_and_snapshot">
-         <item row="0" column="0">
-          <widget class="QCheckBox" name="check_display_actual_resolution">
-           <property name="focusPolicy">
-            <enum>Qt::NoFocus</enum>
-           </property>
-           <property name="text">
-            <string>Display actual resolution</string>
-           </property>
-          </widget>
-         </item>
          <item row="1" column="1">
           <widget class="QPushButton" name="push_snapshot_save">
            <property name="focusPolicy">
@@ -1437,19 +1402,6 @@
            </property>
            <property name="text">
             <string>Save Snapshot</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QCheckBox" name="check_display_undistorted">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="focusPolicy">
-            <enum>Qt::NoFocus</enum>
-           </property>
-           <property name="text">
-            <string>Undistorted</string>
            </property>
           </widget>
          </item>
@@ -1501,6 +1453,19 @@
            </item>
           </layout>
          </item>
+         <item row="0" column="1">
+          <widget class="QCheckBox" name="check_display_undistorted">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
+           <property name="text">
+            <string>Undistorted</string>
+           </property>
+          </widget>
+         </item>
          <item row="0" column="3">
           <widget class="QLineEdit" name="edit_viewport_resolution">
            <property name="enabled">
@@ -1529,6 +1494,13 @@
            </property>
           </widget>
          </item>
+         <item row="1" column="3">
+          <widget class="QCheckBox" name="check_model_detection">
+           <property name="text">
+            <string>Model Detection</string>
+           </property>
+          </widget>
+         </item>
          <item row="0" column="2">
           <spacer name="hspacer_viewport">
            <property name="orientation">
@@ -1541,6 +1513,23 @@
             </size>
            </property>
           </spacer>
+         </item>
+         <item row="0" column="0">
+          <widget class="QCheckBox" name="check_display_actual_resolution">
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
+           <property name="text">
+            <string>Display actual resolution</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="3">
+          <widget class="QCheckBox" name="check_qr_detection">
+           <property name="text">
+            <string>QR Detection</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>

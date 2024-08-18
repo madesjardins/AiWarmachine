@@ -27,7 +27,7 @@ class TickGenerator(QtCore.QThread):
     """A simple threaded object to generate ticks at an approximative rate."""
 
     # tick signal sends time since start in seconds.
-    tick = QtCore.pyqtSignal(float)
+    tick = QtCore.pyqtSignal(float, float)
 
     def __init__(self, tps=constants.DEFAULT_FPS):
         """Initialize.
@@ -46,9 +46,10 @@ class TickGenerator(QtCore.QThread):
         self.running_time = 0.0
         start_time = time.time()
         while self.is_running:
-            self.tick.emit(self.running_time)
+            self.tick.emit(self.running_time, self.time_interval)
             time.sleep(self.time_interval)
             self.running_time = time.time() - start_time
+            QtCore.QCoreApplication.processEvents()
 
     def stop(self):
         self.is_running = False
