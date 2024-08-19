@@ -23,7 +23,6 @@ from functools import partial
 from datetime import datetime
 import json
 import time
-from pprint import pprint
 
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import cv2 as cv
@@ -37,6 +36,7 @@ from . import game_table
 from . import model_detection
 from . import viewport_label
 from . import qr_detection
+from . import projector_dialog
 
 
 class CalibrationDialog(QtWidgets.QDialog):
@@ -85,6 +85,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         self._game_to_camera_matrix = None
         self._init_ui()
         self._init_connections()
+        self.launch_projector_dialog()
         self.show()
 
     def _init_ui(self):
@@ -181,6 +182,10 @@ class CalibrationDialog(QtWidgets.QDialog):
         self._qr_detector.latest_data_ready.connect(self.update_latest_qr_detection_data)
         self.analyze_qr_image.connect(self._qr_detector.set_image)
 
+    def launch_projector_dialog(self):
+        """Pop the projector dialog."""
+        self._projector_dialog = projector_dialog.ProjectorDialog(self)
+
     def update_table_overlay(self):
         """"""
         width = self.latest_image.width()
@@ -197,19 +202,19 @@ class CalibrationDialog(QtWidgets.QDialog):
         painter.setBrush(brush)
         pen = QtGui.QPen(QtCore.Qt.GlobalColor.white, 1, QtCore.Qt.PenStyle.SolidLine)
         painter.setPen(pen)
-        red = QtCore.QPoint(self.ui.spin_table_corner_red_x.value(), self.ui.spin_table_corner_red_y.value())
-        yellow = QtCore.QPoint(self.ui.spin_table_corner_yellow_x.value(), self.ui.spin_table_corner_yellow_y.value())
-        green = QtCore.QPoint(self.ui.spin_table_corner_green_x.value(), self.ui.spin_table_corner_green_y.value())
-        blue = QtCore.QPoint(self.ui.spin_table_corner_blue_x.value(), self.ui.spin_table_corner_blue_y.value())
-        painter.drawPolyline([red, yellow, green, blue, red])
-        painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.red, 2, QtCore.Qt.PenStyle.SolidLine))
-        painter.drawEllipse(red, 10, 10)
-        painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.yellow, 2, QtCore.Qt.PenStyle.SolidLine))
-        painter.drawEllipse(yellow, 10, 10)
+        point_bl = QtCore.QPoint(self.ui.spin_table_corner_bl_x.value(), self.ui.spin_table_corner_bl_y.value())
+        point_tl = QtCore.QPoint(self.ui.spin_table_corner_tl_x.value(), self.ui.spin_table_corner_tl_y.value())
+        point_tr = QtCore.QPoint(self.ui.spin_table_corner_tr_x.value(), self.ui.spin_table_corner_tr_y.value())
+        point_br = QtCore.QPoint(self.ui.spin_table_corner_br_x.value(), self.ui.spin_table_corner_br_y.value())
+        painter.drawPolyline([point_bl, point_tl, point_tr, point_br, point_bl])
         painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.green, 2, QtCore.Qt.PenStyle.SolidLine))
-        painter.drawEllipse(green, 10, 10)
+        painter.drawEllipse(point_bl, 10, 10)
         painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.blue, 2, QtCore.Qt.PenStyle.SolidLine))
-        painter.drawEllipse(blue, 10, 10)
+        painter.drawEllipse(point_tl, 10, 10)
+        painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.red, 2, QtCore.Qt.PenStyle.SolidLine))
+        painter.drawEllipse(point_tr, 10, 10)
+        painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.yellow, 2, QtCore.Qt.PenStyle.SolidLine))
+        painter.drawEllipse(point_br, 10, 10)
         painter.end()
         self._table_overlay = table_overlay
 
@@ -224,7 +229,7 @@ class CalibrationDialog(QtWidgets.QDialog):
             return
 
         if is_press:
-
+            # TODO: SIMPLIFY CODE
             width = self.latest_image.width()
             height = self.latest_image.height()
             pos_mouse = QtCore.QPoint(int(norm_pos_x * width), int(norm_pos_y * height))
@@ -234,39 +239,39 @@ class CalibrationDialog(QtWidgets.QDialog):
             closest_corner_point = None
             closest_distance = None
 
-            pos_red = QtCore.QPoint(self.ui.spin_table_corner_red_x.value(), self.ui.spin_table_corner_red_y.value())
-            pos_yellow = QtCore.QPoint(self.ui.spin_table_corner_yellow_x.value(), self.ui.spin_table_corner_yellow_y.value())
-            pos_green = QtCore.QPoint(self.ui.spin_table_corner_green_x.value(), self.ui.spin_table_corner_green_y.value())
-            pos_blue = QtCore.QPoint(self.ui.spin_table_corner_blue_x.value(), self.ui.spin_table_corner_blue_y.value())
+            pos_bl = QtCore.QPoint(self.ui.spin_table_corner_bl_x.value(), self.ui.spin_table_corner_bl_y.value())
+            pos_tl = QtCore.QPoint(self.ui.spin_table_corner_tl_x.value(), self.ui.spin_table_corner_tl_y.value())
+            pos_tr = QtCore.QPoint(self.ui.spin_table_corner_tr_x.value(), self.ui.spin_table_corner_tr_y.value())
+            pos_br = QtCore.QPoint(self.ui.spin_table_corner_br_x.value(), self.ui.spin_table_corner_br_y.value())
 
-            test_pos = pos_red - pos_mouse
+            test_pos = pos_bl - pos_mouse
             test_distance = test_pos.manhattanLength()
-            closest_corner_index = constants.TABLE_CORNERS_INDEX_RED
-            closest_corner_point = pos_red
+            closest_corner_index = constants.TABLE_CORNERS_INDEX_BL
+            closest_corner_point = pos_bl
             closest_distance = test_distance
 
-            test_pos = pos_yellow - pos_mouse
+            test_pos = pos_tl - pos_mouse
             test_distance = test_pos.manhattanLength()
             if test_distance < closest_distance:
-                closest_corner_index = constants.TABLE_CORNERS_INDEX_YELLOW
-                closest_corner_point = pos_yellow
+                closest_corner_index = constants.TABLE_CORNERS_INDEX_TL
+                closest_corner_point = pos_tl
                 closest_distance = test_distance
 
-            test_pos = pos_green - pos_mouse
+            test_pos = pos_tr - pos_mouse
             test_distance = test_pos.manhattanLength()
             if test_distance < closest_distance:
-                closest_corner_index = constants.TABLE_CORNERS_INDEX_GREEN
-                closest_corner_point = pos_green
+                closest_corner_index = constants.TABLE_CORNERS_INDEX_TR
+                closest_corner_point = pos_tr
                 closest_distance = test_distance
 
-            test_pos = pos_blue - pos_mouse
+            test_pos = pos_br - pos_mouse
             test_distance = test_pos.manhattanLength()
             if test_distance < closest_distance:
-                closest_corner_index = constants.TABLE_CORNERS_INDEX_BLUE
-                closest_corner_point = pos_blue
+                closest_corner_index = constants.TABLE_CORNERS_INDEX_BR
+                closest_corner_point = pos_br
                 closest_distance = test_distance
 
-            if closest_distance <= 10:
+            if closest_distance <= constants.MAXIMUM_CLOSEST_TABLE_CORNER_DISTANCE:
                 self._selected_corner_index = closest_corner_index
                 self._table_offset = closest_corner_point - pos_mouse
 
@@ -276,35 +281,35 @@ class CalibrationDialog(QtWidgets.QDialog):
             pos_x = min(max(0, int(norm_pos_x * width) + self._table_offset.x()), width - 1)
             pos_y = min(max(0, int(norm_pos_y * height) + self._table_offset.y()), height - 1)
 
-            if self._selected_corner_index == constants.TABLE_CORNERS_INDEX_RED:
-                self.ui.spin_table_corner_red_x.setValue(pos_x)
-                self.ui.spin_table_corner_red_y.setValue(pos_y)
-            elif self._selected_corner_index == constants.TABLE_CORNERS_INDEX_YELLOW:
-                self.ui.spin_table_corner_yellow_x.setValue(pos_x)
-                self.ui.spin_table_corner_yellow_y.setValue(pos_y)
-            elif self._selected_corner_index == constants.TABLE_CORNERS_INDEX_GREEN:
-                self.ui.spin_table_corner_green_x.setValue(pos_x)
-                self.ui.spin_table_corner_green_y.setValue(pos_y)
-            elif self._selected_corner_index == constants.TABLE_CORNERS_INDEX_BLUE:
-                self.ui.spin_table_corner_blue_x.setValue(pos_x)
-                self.ui.spin_table_corner_blue_y.setValue(pos_y)
+            if self._selected_corner_index == constants.TABLE_CORNERS_INDEX_BL:
+                self.ui.spin_table_corner_bl_x.setValue(pos_x)
+                self.ui.spin_table_corner_bl_y.setValue(pos_y)
+            elif self._selected_corner_index == constants.TABLE_CORNERS_INDEX_TL:
+                self.ui.spin_table_corner_tl_x.setValue(pos_x)
+                self.ui.spin_table_corner_tl_y.setValue(pos_y)
+            elif self._selected_corner_index == constants.TABLE_CORNERS_INDEX_TR:
+                self.ui.spin_table_corner_tr_x.setValue(pos_x)
+                self.ui.spin_table_corner_tr_y.setValue(pos_y)
+            elif self._selected_corner_index == constants.TABLE_CORNERS_INDEX_BR:
+                self.ui.spin_table_corner_br_x.setValue(pos_x)
+                self.ui.spin_table_corner_br_y.setValue(pos_y)
 
             self.update_table_overlay()
 
     @QtCore.pyqtSlot()
     def calculate_table_matrix(self):
         """Calculate transform matrix from camera to game."""
-        pos_red = QtCore.QPointF(self.ui.spin_table_corner_red_x.value(), self.ui.spin_table_corner_red_y.value())
-        pos_yellow = QtCore.QPointF(self.ui.spin_table_corner_yellow_x.value(), self.ui.spin_table_corner_yellow_y.value())
-        pos_green = QtCore.QPointF(self.ui.spin_table_corner_green_x.value(), self.ui.spin_table_corner_green_y.value())
-        pos_blue = QtCore.QPointF(self.ui.spin_table_corner_blue_x.value(), self.ui.spin_table_corner_blue_y.value())
+        pos_bl = QtCore.QPointF(self.ui.spin_table_corner_bl_x.value(), self.ui.spin_table_corner_bl_y.value())
+        pos_tl = QtCore.QPointF(self.ui.spin_table_corner_tl_x.value(), self.ui.spin_table_corner_tl_y.value())
+        pos_tr = QtCore.QPointF(self.ui.spin_table_corner_tr_x.value(), self.ui.spin_table_corner_tr_y.value())
+        pos_br = QtCore.QPointF(self.ui.spin_table_corner_br_x.value(), self.ui.spin_table_corner_br_y.value())
 
         camera_points = np.float32(
             [
-                [pos_red.x(), pos_red.y()],
-                [pos_yellow.x(), pos_yellow.y()],
-                [pos_green.x(), pos_green.y()],
-                [pos_blue.x(), pos_blue.y()],
+                [pos_bl.x(), pos_bl.y()],
+                [pos_tl.x(), pos_tl.y()],
+                [pos_tr.x(), pos_tr.y()],
+                [pos_br.x(), pos_br.y()],
             ]
         )
 
@@ -444,6 +449,7 @@ class CalibrationDialog(QtWidgets.QDialog):
             self._qr_detector.wait()
             for _, camera_obj in self._cameras_dict.items():
                 camera_obj.release()
+            self._projector_dialog.close()
         except Exception:
             traceback.print_exc()
         return super().closeEvent(a0)

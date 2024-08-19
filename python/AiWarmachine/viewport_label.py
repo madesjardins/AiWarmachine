@@ -8,6 +8,7 @@ class ViewportLabel(QtWidgets.QLabel):
 
     mouse_press_event = QtCore.pyqtSignal(float, float)
     mouse_drag_event = QtCore.pyqtSignal(float, float)
+    key_press_event = QtCore.pyqtSignal(str)
 
     def __init__(self, parent=None):
         """Initialize.
@@ -72,11 +73,16 @@ class ViewportLabel(QtWidgets.QLabel):
         """Mouse release event."""
         self.is_pressed = False
 
-    def setPixmap(self, image):
+    def keyPressEvent(self, event):
+        """A key was pressed."""
+        self.key_press_event.emit(event.text())
+
+    def setPixmap(self, image, fixed_size=True):
         """Set Pixmap"""
         if self.pix_size != image.size():
             self.pix_size = image.size()
-            self.setFixedSize(self.pix_size)
+            if fixed_size:
+                self.setFixedSize(self.pix_size)
 
         super().setPixmap(image)
         self.repaint()
