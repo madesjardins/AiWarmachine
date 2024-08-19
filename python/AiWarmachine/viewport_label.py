@@ -40,6 +40,22 @@ class ViewportLabel(QtWidgets.QLabel):
             min(max(0, pos.y() / height), (height - 1) / height)
         )
 
+    def get_safe_pos(self, pos):
+        """Get the position of the mouse event within the limit of the resolution.
+
+        :param pos: Position in pixels.
+        :type pos: :class:`QSize`
+
+        :return: X and y values in pixels.
+        :rtype: tuple[int, int]
+        """
+        width = self.pix_size.width()
+        height = self.pix_size.height()
+        return (
+            min(max(0, pos.x()), (width - 1)),
+            min(max(0, pos.y()), (height - 1))
+        )
+
     def mousePressEvent(self, event):
         """Mouse press event."""
         self.is_pressed = True

@@ -79,6 +79,10 @@ class CalibrationDialog(QtWidgets.QDialog):
         self._qr_detector = qr_detection.QRDetector()
         self.latest_qr_detection_data = {}
         self._skip_for_n_ticks = 0
+        self._selected_corner_index = None
+        self._table_overlay = None
+        self._camera_to_game_matrix = None
+        self._game_to_camera_matrix = None
         self._init_ui()
         self._init_connections()
         self.show()
@@ -91,6 +95,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         layout.addWidget(self.ui)
         self.setLayout(layout)
 
+        # Label for viewport
         self.ui.label_viewport_image = viewport_label.ViewportLabel(self.ui.scroll_viewport_widget)
         self.ui.scroll_viewport_widget.layout().addWidget(self.ui.label_viewport_image)
 
@@ -145,20 +150,23 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.ui.push_uncalibrate.clicked.connect(self.uncalibrate)
 
         # table
-        self.ui.spin_table_w.valueChanged.connect(self.update_table_dimensions)
-        self.ui.spin_table_h.valueChanged.connect(self.update_table_dimensions)
-        self.ui.combo_table_border_color.currentIndexChanged.connect(self.update_table_border_color)
-        self.ui.spin_table_border_color_alpha.valueChanged.connect(self.update_table_border_color)
-        self.ui.double_table_t_x.valueChanged.connect(self.update_table_transforms)
-        self.ui.double_table_t_y.valueChanged.connect(self.update_table_transforms)
-        self.ui.double_table_t_z.valueChanged.connect(self.update_table_transforms)
-        self.ui.double_table_r_x.valueChanged.connect(self.update_table_transforms)
-        self.ui.double_table_r_y.valueChanged.connect(self.update_table_transforms)
-        self.ui.double_table_r_z.valueChanged.connect(self.update_table_transforms)
-        self.ui.push_table_reset.clicked.connect(self.reset_table_transforms)
-        self.ui.push_table_save.clicked.connect(self.table_save)
-        self.ui.push_table_load.clicked.connect(self.table_load)
-        self.ui.edit_table_name.textEdited.connect(self.set_table_name)
+        # self.ui.spin_table_w.valueChanged.connect(self.update_table_dimensions)
+        # self.ui.spin_table_h.valueChanged.connect(self.update_table_dimensions)
+        # self.ui.combo_table_border_color.currentIndexChanged.connect(self.update_table_border_color)
+        # self.ui.spin_table_border_color_alpha.valueChanged.connect(self.update_table_border_color)
+        # self.ui.double_table_t_x.valueChanged.connect(self.update_table_transforms)
+        # self.ui.double_table_t_y.valueChanged.connect(self.update_table_transforms)
+        # self.ui.double_table_t_z.valueChanged.connect(self.update_table_transforms)
+        # self.ui.double_table_r_x.valueChanged.connect(self.update_table_transforms)
+        # self.ui.double_table_r_y.valueChanged.connect(self.update_table_transforms)
+        # self.ui.double_table_r_z.valueChanged.connect(self.update_table_transforms)
+        # self.ui.push_table_reset.clicked.connect(self.reset_table_transforms)
+        # self.ui.push_table_save.clicked.connect(self.table_save)
+        # self.ui.push_table_load.clicked.connect(self.table_load)
+        # self.ui.edit_table_name.textEdited.connect(self.set_table_name)
+        self.ui.label_viewport_image.mouse_press_event.connect(partial(self.update_table_corners, True))
+        self.ui.label_viewport_image.mouse_drag_event.connect(partial(self.update_table_corners, False))
+        self.ui.push_calculate_table_matrix.clicked.connect(self.calculate_table_matrix)
 
         # snapshot
         self.ui.push_snapshot_save.clicked.connect(self.snapshot_save)
@@ -172,6 +180,150 @@ class CalibrationDialog(QtWidgets.QDialog):
         # QR Detection
         self._qr_detector.latest_data_ready.connect(self.update_latest_qr_detection_data)
         self.analyze_qr_image.connect(self._qr_detector.set_image)
+
+    def update_table_overlay(self):
+        """"""
+        width = self.latest_image.width()
+        height = self.latest_image.height()
+
+        # update table overlay
+        image_size = QtCore.QSize(width, height)
+        table_overlay = QtGui.QImage(image_size, QtGui.QImage.Format.Format_ARGB32_Premultiplied)
+        painter = QtGui.QPainter(table_overlay)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
+        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
+        painter.fillRect(table_overlay.rect(), QtCore.Qt.GlobalColor.transparent)
+        brush = QtGui.QBrush()
+        painter.setBrush(brush)
+        pen = QtGui.QPen(QtCore.Qt.GlobalColor.white, 1, QtCore.Qt.PenStyle.SolidLine)
+        painter.setPen(pen)
+        red = QtCore.QPoint(self.ui.spin_table_corner_red_x.value(), self.ui.spin_table_corner_red_y.value())
+        yellow = QtCore.QPoint(self.ui.spin_table_corner_yellow_x.value(), self.ui.spin_table_corner_yellow_y.value())
+        green = QtCore.QPoint(self.ui.spin_table_corner_green_x.value(), self.ui.spin_table_corner_green_y.value())
+        blue = QtCore.QPoint(self.ui.spin_table_corner_blue_x.value(), self.ui.spin_table_corner_blue_y.value())
+        painter.drawPolyline([red, yellow, green, blue, red])
+        painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.red, 2, QtCore.Qt.PenStyle.SolidLine))
+        painter.drawEllipse(red, 10, 10)
+        painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.yellow, 2, QtCore.Qt.PenStyle.SolidLine))
+        painter.drawEllipse(yellow, 10, 10)
+        painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.green, 2, QtCore.Qt.PenStyle.SolidLine))
+        painter.drawEllipse(green, 10, 10)
+        painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.blue, 2, QtCore.Qt.PenStyle.SolidLine))
+        painter.drawEllipse(blue, 10, 10)
+        painter.end()
+        self._table_overlay = table_overlay
+
+    @QtCore.pyqtSlot(bool, float, float)
+    def update_table_corners(self, is_press, norm_pos_x, norm_pos_y):
+        """Update table corners values.
+
+        :param is_press: Whether this is a press event instead of a drag.
+        :type is_press: bool
+        """
+        if self._table_overlay is None:
+            return
+
+        if is_press:
+
+            width = self.latest_image.width()
+            height = self.latest_image.height()
+            pos_mouse = QtCore.QPoint(int(norm_pos_x * width), int(norm_pos_y * height))
+
+            self._selected_corner_index = None
+            closest_corner_index = None
+            closest_corner_point = None
+            closest_distance = None
+
+            pos_red = QtCore.QPoint(self.ui.spin_table_corner_red_x.value(), self.ui.spin_table_corner_red_y.value())
+            pos_yellow = QtCore.QPoint(self.ui.spin_table_corner_yellow_x.value(), self.ui.spin_table_corner_yellow_y.value())
+            pos_green = QtCore.QPoint(self.ui.spin_table_corner_green_x.value(), self.ui.spin_table_corner_green_y.value())
+            pos_blue = QtCore.QPoint(self.ui.spin_table_corner_blue_x.value(), self.ui.spin_table_corner_blue_y.value())
+
+            test_pos = pos_red - pos_mouse
+            test_distance = test_pos.manhattanLength()
+            closest_corner_index = constants.TABLE_CORNERS_INDEX_RED
+            closest_corner_point = pos_red
+            closest_distance = test_distance
+
+            test_pos = pos_yellow - pos_mouse
+            test_distance = test_pos.manhattanLength()
+            if test_distance < closest_distance:
+                closest_corner_index = constants.TABLE_CORNERS_INDEX_YELLOW
+                closest_corner_point = pos_yellow
+                closest_distance = test_distance
+
+            test_pos = pos_green - pos_mouse
+            test_distance = test_pos.manhattanLength()
+            if test_distance < closest_distance:
+                closest_corner_index = constants.TABLE_CORNERS_INDEX_GREEN
+                closest_corner_point = pos_green
+                closest_distance = test_distance
+
+            test_pos = pos_blue - pos_mouse
+            test_distance = test_pos.manhattanLength()
+            if test_distance < closest_distance:
+                closest_corner_index = constants.TABLE_CORNERS_INDEX_BLUE
+                closest_corner_point = pos_blue
+                closest_distance = test_distance
+
+            if closest_distance <= 10:
+                self._selected_corner_index = closest_corner_index
+                self._table_offset = closest_corner_point - pos_mouse
+
+        elif self._selected_corner_index is not None:
+            width = self.latest_image.width()
+            height = self.latest_image.height()
+            pos_x = min(max(0, int(norm_pos_x * width) + self._table_offset.x()), width - 1)
+            pos_y = min(max(0, int(norm_pos_y * height) + self._table_offset.y()), height - 1)
+
+            if self._selected_corner_index == constants.TABLE_CORNERS_INDEX_RED:
+                self.ui.spin_table_corner_red_x.setValue(pos_x)
+                self.ui.spin_table_corner_red_y.setValue(pos_y)
+            elif self._selected_corner_index == constants.TABLE_CORNERS_INDEX_YELLOW:
+                self.ui.spin_table_corner_yellow_x.setValue(pos_x)
+                self.ui.spin_table_corner_yellow_y.setValue(pos_y)
+            elif self._selected_corner_index == constants.TABLE_CORNERS_INDEX_GREEN:
+                self.ui.spin_table_corner_green_x.setValue(pos_x)
+                self.ui.spin_table_corner_green_y.setValue(pos_y)
+            elif self._selected_corner_index == constants.TABLE_CORNERS_INDEX_BLUE:
+                self.ui.spin_table_corner_blue_x.setValue(pos_x)
+                self.ui.spin_table_corner_blue_y.setValue(pos_y)
+
+            self.update_table_overlay()
+
+    @QtCore.pyqtSlot()
+    def calculate_table_matrix(self):
+        """Calculate transform matrix from camera to game."""
+        pos_red = QtCore.QPointF(self.ui.spin_table_corner_red_x.value(), self.ui.spin_table_corner_red_y.value())
+        pos_yellow = QtCore.QPointF(self.ui.spin_table_corner_yellow_x.value(), self.ui.spin_table_corner_yellow_y.value())
+        pos_green = QtCore.QPointF(self.ui.spin_table_corner_green_x.value(), self.ui.spin_table_corner_green_y.value())
+        pos_blue = QtCore.QPointF(self.ui.spin_table_corner_blue_x.value(), self.ui.spin_table_corner_blue_y.value())
+
+        camera_points = np.float32(
+            [
+                [pos_red.x(), pos_red.y()],
+                [pos_yellow.x(), pos_yellow.y()],
+                [pos_green.x(), pos_green.y()],
+                [pos_blue.x(), pos_blue.y()],
+            ]
+        )
+
+        game_width = self.ui.double_table_w.value()
+        game_height = self.ui.double_table_h.value()
+
+        game_points = np.float32(
+            [
+                [0.0, 0.0],
+                [0.0, game_height],
+                [game_width, game_height],
+                [game_width, 0.0]
+            ]
+        )
+
+        self._camera_to_game_matrix = cv.getPerspectiveTransform(camera_points, game_points)
+        self._game_to_camera_matrix = cv.getPerspectiveTransform(game_points, camera_points)
+
+        # To transform: V = MAT.dot(VEC3); P2d = V[:2]/V[2]; where VEC3 is homogeneous of original point
 
     @QtCore.pyqtSlot(dict, int, int, int, int)
     def update_latest_qr_detection_data(self, latest_data, offset_x, offset_y, width, height):
@@ -391,6 +543,7 @@ class CalibrationDialog(QtWidgets.QDialog):
             # -- RESET DISTORTION CHECK --
             elif self.ui.check_display_undistorted.isChecked():
                 self.ui.check_display_undistorted.setCheckState(QtCore.Qt.CheckState.Unchecked)
+                self._table_overlay = None
 
             # -- STORE LATEST IMAGE as QIMAGE--
             self.latest_image = QtGui.QImage(
@@ -400,6 +553,9 @@ class CalibrationDialog(QtWidgets.QDialog):
                 camera_frame.strides[0],
                 QtGui.QImage.Format.Format_BGR888
             )
+
+            if current_camera.is_calibrated() and self._table_overlay is None:
+                self.update_table_overlay()
 
             self.ui.edit_camera_effective_resolution.setText(info_str)
 
@@ -440,6 +596,9 @@ class CalibrationDialog(QtWidgets.QDialog):
 
             else:
                 image = self.latest_image
+
+        if self._table_overlay is not None:
+            image = common.composite_images(image, self._table_overlay)
 
         if self.ui.check_display_actual_resolution.isChecked():
             self.ui.label_viewport_image.resize(image.width(), image.height())
@@ -923,10 +1082,10 @@ class CalibrationDialog(QtWidgets.QDialog):
         if self._disable_table_change:
             return
 
-        self._table.set_dimensions(
-            self.ui.spin_table_w.value(),
-            self.ui.spin_table_h.value(),
-        )
+        # self._table.set_dimensions(
+        #     self.ui.spin_table_w.value(),
+        #     self.ui.spin_table_h.value(),
+        # )
 
         self._overlay_need_update = True
 
@@ -1047,8 +1206,8 @@ class CalibrationDialog(QtWidgets.QDialog):
         self._disable_table_change = True
         self.ui.edit_table_name.setText(self._table.name)
         width, height = self._table.get_dimensions()
-        self.ui.spin_table_w.setValue(width)
-        self.ui.spin_table_h.setValue(height)
+        # self.ui.spin_table_w.setValue(width)
+        # self.ui.spin_table_h.setValue(height)
         border_color_name, alpha = self._table.get_border_color_name_and_alpha()
         index = self.ui.combo_table_border_color.findText(border_color_name)
         if index > -1:
