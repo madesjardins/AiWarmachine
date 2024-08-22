@@ -17,7 +17,6 @@
 """common functions."""
 
 import os
-import re
 import math
 import json
 
@@ -217,7 +216,8 @@ def get_aiwarmachine_root_dir():
     :return: The directory path.
     :rtype: str
     """
-    return re.sub("/[^/]+/\\.\\./.*$", "", os.getenv('AIWARMACHINE_PYTHON_DIR').replace("\\", "/"))
+
+    return os.path.dirname(os.getenv('AIWARMACHINE_PYTHON_DIR').replace("\\", "/"))
 
 
 def get_saved_subdir(subdir_name):
@@ -343,8 +343,15 @@ def get_transform_matrix(tx, ty, tz, rx, ry, rz):
     return matrix
 
 
-def composite_images(image_base, image_overlay, overlay_x=0, overlay_y=0):
-    """Composite 2 images using over mode.
+def composite_images(
+    image_base,
+    image_overlay,
+    overlay_x=0,
+    overlay_y=0,
+    image_format=QtGui.QImage.Format.Format_ARGB32_Premultiplied,
+    composite_mode=QtGui.QPainter.CompositionMode.CompositionMode_SourceOver,
+):
+    """Composite 2 images using specific mode.
 
     :param image_base: The base image.
     :type image_base: :class:`QImage`
@@ -358,16 +365,22 @@ def composite_images(image_base, image_overlay, overlay_x=0, overlay_y=0):
     :param overlay_y: Vertical overlay offset in pixels. (0)
     :type overlay_y: int
 
+    :param image_format: The returned image format. (QtGui.QImage.Format.Format_ARGB32_Premultiplied)
+    :type image_format: :class:`Format`
+
+    :param composite_mode: The composite mode. (QtGui.QPainter.CompositionMode.CompositionMode_SourceOver)
+    :type composite_mode: :class:`CompositionMode`
+
     :return: Composite image.
     :rtype: :class:`QImage`
     """
-    image_result = QtGui.QImage(image_base.size(), QtGui.QImage.Format.Format_ARGB32_Premultiplied)
+    image_result = QtGui.QImage(image_base.size(), image_format)
     painter = QtGui.QPainter(image_result)
 
     painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
     painter.drawImage(0, 0, image_base)
 
-    painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_SourceOver)
+    painter.setCompositionMode(composite_mode)
     painter.drawImage(overlay_x, overlay_y, image_overlay)
 
     painter.end()

@@ -17,15 +17,27 @@
 """Projector dialog."""
 
 from functools import partial
+import copy
 
 from PyQt6 import QtCore, QtWidgets, QtGui
+import numpy as np
+import cv2 as cv
 
-from . import viewport_label
-from . import constants
+from . import viewport_label, constants, common
+
+
+MOVE_KEY_POINTS_DICT = {
+    "a": QtCore.QPoint(-1, 0),
+    "s": QtCore.QPoint(0, -1),
+    "d": QtCore.QPoint(1, 0),
+    "w": QtCore.QPoint(0, 1),
+}
 
 
 class ProjectorDialog(QtWidgets.QDialog):
     """Projector dialog to draw information on board."""
+
+    corner_changed = QtCore.pyqtSignal(int, QtCore.QPoint)
 
     def __init__(self, parent=None):
         """Initialize.
@@ -34,7 +46,6 @@ class ProjectorDialog(QtWidgets.QDialog):
         :type parent: :class:`QWidget`
         """
         super().__init__(parent=parent, flags=QtCore.Qt.WindowType.WindowTitleHint | QtCore.Qt.WindowType.CustomizeWindowHint)
-        self._game_to_camera_matrix = None
         self._is_fullscreen = False
         self._corner_points_list = [
             QtCore.QPoint(10, 260),
@@ -46,6 +57,8 @@ class ProjectorDialog(QtWidgets.QDialog):
         self._selected_corner_offset = QtCore.QPoint(0, 0)
         self._corners_are_visible = False
         self._borders_in_bold = False
+        self._game_to_projector_matrix = None
+        self._game_overlay = None
         self._init_ui()
         self._init_connections()
         self.show()
@@ -93,7 +106,6 @@ class ProjectorDialog(QtWidgets.QDialog):
             else:
                 self.showFullScreen()
                 size = self.geometry().size()
-                print(size)
                 self._base_image = self._base_image.scaled(
                     size.width(),
                     size.height(),
@@ -110,6 +122,18 @@ class ProjectorDialog(QtWidgets.QDialog):
 
         elif key_text == "b":
             self._borders_in_bold = not self._borders_in_bold
+            self.update_corner_overlay()
+
+        elif key_text in MOVE_KEY_POINTS_DICT and self._selected_corner_index is not None:
+            width = self._base_image.width()
+            height = self._base_image.height()
+
+            self._corner_points_list[self._selected_corner_index].setX(
+                min(max(0, self._corner_points_list[self._selected_corner_index].x() + MOVE_KEY_POINTS_DICT[key_text].x()), width - 1)
+            )
+            self._corner_points_list[self._selected_corner_index].setY(
+                min(max(0, self._corner_points_list[self._selected_corner_index].y() + MOVE_KEY_POINTS_DICT[key_text].y()), height - 1)
+            )
             self.update_corner_overlay()
 
     @QtCore.pyqtSlot(bool, float, float)
@@ -151,6 +175,56 @@ class ProjectorDialog(QtWidgets.QDialog):
             )
             self.update_corner_overlay()
 
+    def calculate_game_to_projector_matrix(self, width, height):
+        """"""
+        projector_points = np.float32(
+            [
+                [self._corner_points_list[constants.TABLE_CORNERS_INDEX_BL].x(), self._corner_points_list[constants.TABLE_CORNERS_INDEX_BL].y()],
+                [self._corner_points_list[constants.TABLE_CORNERS_INDEX_TL].x(), self._corner_points_list[constants.TABLE_CORNERS_INDEX_TL].y()],
+                [self._corner_points_list[constants.TABLE_CORNERS_INDEX_TR].x(), self._corner_points_list[constants.TABLE_CORNERS_INDEX_TR].y()],
+                [self._corner_points_list[constants.TABLE_CORNERS_INDEX_BR].x(), self._corner_points_list[constants.TABLE_CORNERS_INDEX_BR].y()],
+            ]
+        )
+
+        game_points = np.float32(
+            [
+                [0.0, 0.0],
+                [0.0, height],
+                [width, height],
+                [width, 0.0]
+            ]
+        )
+
+        self._game_to_projector_matrix = cv.getPerspectiveTransform(game_points, projector_points)
+
+    @QtCore.pyqtSlot(dict)
+    def update_game_overlay(self, game_qr_detection_data):
+        """"""
+        self._latest_game_qr_detection_data = copy.deepcopy(game_qr_detection_data)
+        if self._base_image is not None and self._game_to_projector_matrix is not None:
+            image = np.zeros(
+                (
+                    1280,  # Should be based on 1px = 1mm
+                    720,
+                    3
+                ),
+                dtype=np.uint8
+            )
+            image[:, :] = (0, 0, 0)
+            for message, qr_data in game_qr_detection_data.items():
+                cv.circle(image, qr_data['pos'], 18, (255, 255, 255), 3)
+
+            warped_image = cv.warpPerspective(image, self._game_to_projector_matrix, (self._base_image.width(), self._base_image.height()))
+            self._game_overlay = QtGui.QImage(
+                warped_image,
+                warped_image.shape[1],
+                warped_image.shape[0],
+                warped_image.strides[0],
+                QtGui.QImage.Format.Format_BGR888
+            )
+
+        self.refresh_image()
+
     def update_corner_overlay(self):
         """"""
         self._base_image.fill(QtCore.Qt.GlobalColor.black)
@@ -178,7 +252,18 @@ class ProjectorDialog(QtWidgets.QDialog):
     def refresh_image(self):
         """"""
         # Composite overlay
-        self.set_image(self._base_image)
+        if self._game_overlay is not None:
+            self.set_image(
+                common.composite_images(
+                    self._base_image,
+                    self._game_overlay,
+                    image_format=QtGui.QImage.Format.Format_RGB888,
+                    composite_mode=QtGui.QPainter.CompositionMode.CompositionMode_Plus
+                )
+            )
+
+        else:
+            self.set_image(self._base_image)
 
     @QtCore.pyqtSlot(object)
     def set_image(self, image):

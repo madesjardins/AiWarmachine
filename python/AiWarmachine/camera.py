@@ -29,9 +29,7 @@ from PyQt6 import QtCore
 import numpy as np
 import cv2 as cv
 
-from . import constants
-from . import camera_feed
-from . import common
+from . import constants, camera_feed, common
 
 
 class Camera(QtCore.QObject):
