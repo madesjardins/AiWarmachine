@@ -77,7 +77,7 @@ class MainDialog(QtWidgets.QDialog):
             self.ui.spin_camera_exposure.setSingleStep(25)
             self.ui.spin_camera_exposure.setValue(250)
 
-        self._table_corners_widgets_dict = {
+        self.table_corners_widgets_dict = {
             "camera": [
                 (self.ui.spin_table_camera_corner_bl_x, self.ui.spin_table_camera_corner_bl_y),
                 (self.ui.spin_table_camera_corner_tl_x, self.ui.spin_table_camera_corner_tl_y),
@@ -144,8 +144,11 @@ class MainDialog(QtWidgets.QDialog):
         self.ui.double_safe_image_grab_coefficient.valueChanged.connect(self.core.set_safe_image_grab_coefficient)
 
     def launch_projector_dialog(self):
-        """Pop the projector dialog."""
-        self._projector_dialog = projector_dialog.ProjectorDialog(core=self.core, parent=self)
+        """Pop the projector dialog, connect ticker and start."""
+        self.projector_dialog = projector_dialog.ProjectorDialog(core=self.core, main_dialog=self)
+        self.core.projector_ticker.timeout.connect(self.projector_dialog.tick)
+        self.ui.spin_projector_refresh_rate.valueChanged.connect(self.core.set_projector_ticker_rate)
+        self.core.projector_ticker.start()
 
     # #############################################
     #
@@ -157,7 +160,7 @@ class MainDialog(QtWidgets.QDialog):
         """Stop ticker and release all cameras."""
         try:
             self.core.stop_all()
-            self._projector_dialog.close()
+            self.projector_dialog.close()
         except Exception:
             traceback.print_exc()
         return super().closeEvent(a0)
@@ -186,10 +189,10 @@ class MainDialog(QtWidgets.QDialog):
             width = self.latest_image.width()
             height = self.latest_image.height()
             corner_points_list = self.core.game_table.get_in_camera_corners_as_points()
-            self._table_corners_widgets_dict['camera'][self._selected_corner_index][0].setValue(
+            self.table_corners_widgets_dict['camera'][self._selected_corner_index][constants.TABLE_CORNERS_AXIS_X].setValue(
                 min(max(0, corner_points_list[self._selected_corner_index].x() + constants.MOVE_KEY_POINTS_DICT[key_text].x()), width - 1)
             )
-            self._table_corners_widgets_dict['camera'][self._selected_corner_index][1].setValue(
+            self.table_corners_widgets_dict['camera'][self._selected_corner_index][constants.TABLE_CORNERS_AXIS_Y].setValue(
                 min(max(0, corner_points_list[self._selected_corner_index].y() + constants.MOVE_KEY_POINTS_DICT[key_text].y()), height - 1)
             )
 
@@ -802,10 +805,10 @@ class MainDialog(QtWidgets.QDialog):
         self.ui.double_table_h.setValue(table_data['height'])
         self.ui.spin_table_resolution_factor.setValue(table_data['resolution_factor'])
         for corner_index in constants.TABLE_CORNERS_DRAWING_ORDER:
-            self._table_corners_widgets_dict['camera'][corner_index][0].setValue(table_data['in_camera_corners'][corner_index][0])
-            self._table_corners_widgets_dict['camera'][corner_index][1].setValue(table_data['in_camera_corners'][corner_index][1])
-            self._table_corners_widgets_dict['projector'][corner_index][0].setValue(table_data['in_projector_corners'][corner_index][0])
-            self._table_corners_widgets_dict['projector'][corner_index][1].setValue(table_data['in_projector_corners'][corner_index][1])
+            self.table_corners_widgets_dict['camera'][corner_index][constants.TABLE_CORNERS_AXIS_X].setValue(table_data['in_camera_corners'][corner_index][constants.TABLE_CORNERS_AXIS_X])
+            self.table_corners_widgets_dict['camera'][corner_index][constants.TABLE_CORNERS_AXIS_Y].setValue(table_data['in_camera_corners'][corner_index][constants.TABLE_CORNERS_AXIS_Y])
+            self.table_corners_widgets_dict['projector'][corner_index][constants.TABLE_CORNERS_AXIS_X].setValue(table_data['in_projector_corners'][corner_index][constants.TABLE_CORNERS_AXIS_X])
+            self.table_corners_widgets_dict['projector'][corner_index][constants.TABLE_CORNERS_AXIS_Y].setValue(table_data['in_projector_corners'][corner_index][constants.TABLE_CORNERS_AXIS_Y])
 
         self.core.game_table.disable_slots = False
 
@@ -864,7 +867,7 @@ class MainDialog(QtWidgets.QDialog):
             pos_x = min(max(0, int(norm_pos_x * width) + self._selected_corner_offset.x()), width - 1)
             pos_y = min(max(0, int(norm_pos_y * height) + self._selected_corner_offset.y()), height - 1)
 
-            self._table_corners_widgets_dict['camera'][self._selected_corner_index][0].setValue(pos_x)
-            self._table_corners_widgets_dict['camera'][self._selected_corner_index][1].setValue(pos_y)
+            self.table_corners_widgets_dict['camera'][self._selected_corner_index][constants.TABLE_CORNERS_AXIS_X].setValue(pos_x)
+            self.table_corners_widgets_dict['camera'][self._selected_corner_index][constants.TABLE_CORNERS_AXIS_Y].setValue(pos_y)
 
             self.core.game_table.set_camera_corners_overlay_needs_update()

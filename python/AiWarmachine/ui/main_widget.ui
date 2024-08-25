@@ -1919,7 +1919,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>1800</number>
+                    <number>980</number>
                    </property>
                   </widget>
                  </item>
@@ -2229,7 +2229,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>1800</number>
+                    <number>980</number>
                    </property>
                   </widget>
                  </item>
@@ -2316,7 +2316,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>1800</number>
+                    <number>980</number>
                    </property>
                   </widget>
                  </item>
@@ -2652,7 +2652,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>1800</number>
+                    <number>980</number>
                    </property>
                   </widget>
                  </item>
@@ -2733,8 +2733,34 @@
            <string>Advanced</string>
           </attribute>
           <layout class="QGridLayout" name="gridLayout_3">
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_table_resolution_factor">
+             <property name="text">
+              <string>Game Table Resolution Factor</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QSpinBox" name="spin_table_resolution_factor">
+             <property name="suffix">
+              <string>mm/px</string>
+             </property>
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>4</number>
+             </property>
+             <property name="value">
+              <number>2</number>
+             </property>
+            </widget>
+           </item>
            <item row="0" column="1">
             <widget class="QSpinBox" name="spin_viewport_refresh_rate">
+             <property name="suffix">
+              <string>fps</string>
+             </property>
              <property name="minimum">
               <number>1</number>
              </property>
@@ -2746,7 +2772,7 @@
              </property>
             </widget>
            </item>
-           <item row="3" column="0">
+           <item row="5" column="0">
             <spacer name="vspacer_advanced">
              <property name="orientation">
               <enum>Qt::Vertical</enum>
@@ -2799,26 +2825,49 @@
              </property>
             </widget>
            </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_table_resolution_factor">
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_qr_detection_rate">
              <property name="text">
-              <string>Game Table Resolution Factor</string>
+              <string>QR Detection Rate Target</string>
              </property>
             </widget>
            </item>
-           <item row="2" column="1">
-            <widget class="QSpinBox" name="spin_table_resolution_factor">
+           <item row="4" column="1">
+            <widget class="QSpinBox" name="spin_qr_detection_rate">
              <property name="suffix">
-              <string>mm/px</string>
+              <string>fps</string>
              </property>
              <property name="minimum">
               <number>1</number>
              </property>
              <property name="maximum">
-              <number>4</number>
+              <number>120</number>
              </property>
              <property name="value">
-              <number>2</number>
+              <number>5</number>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_projector_refresh_rate">
+             <property name="text">
+              <string>Projector Refresh Rate Target</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QSpinBox" name="spin_projector_refresh_rate">
+             <property name="suffix">
+              <string>fps</string>
+             </property>
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>120</number>
+             </property>
+             <property name="value">
+              <number>15</number>
              </property>
             </widget>
            </item>

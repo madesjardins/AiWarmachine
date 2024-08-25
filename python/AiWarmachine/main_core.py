@@ -30,7 +30,7 @@ class MainCore(QtCore.QObject):
         """Initialize."""
         super().__init__()
 
-        self._tps = constants.DEFAULT_TICKS_PER_SECONDS
+        self._tps = constants.DEFAULT_TICKS_PER_SECOND
         self._tick_interval = 1.0 / self._tps
 
         self.latest_image = None
@@ -38,8 +38,11 @@ class MainCore(QtCore.QObject):
         self._safe_image_grab_coefficient = 1
         self._animation_frame = 0
 
-        self._qrdps = constants.DEFAULT_QR_DETECTION_PER_SECONDS
+        self._qrdps = constants.DEFAULT_QR_DETECTION_PER_SECOND
         self._qrd_interval = 1.0 / self._qrdps
+
+        self._pfps = constants.DEFAULT_PROJECTOR_FRAMES_PER_SECOND
+        self._pfps_interval = 1.0 / self._pfps
 
         self.camera_manager = camera_manager.CameraManager()
         self.camera_calibration_helper = camera_calibration.CameraCalibrationHelper()
@@ -56,6 +59,9 @@ class MainCore(QtCore.QObject):
         self.qr_detection_ticker = QtCore.QTimer()
         self.qr_detection_ticker.setInterval(int(self._qrd_interval * 1000))
 
+        self.projector_ticker = QtCore.QTimer()
+        self.projector_ticker.setInterval(int(self._pfps_interval * 1000))
+
     @QtCore.pyqtSlot(int)
     def set_refresh_ticker_rate(self, tps):
         """Set a new refresh rate for the viewport ticker.
@@ -71,7 +77,7 @@ class MainCore(QtCore.QObject):
 
     @QtCore.pyqtSlot(int)
     def set_qr_detection_ticker_rate(self, qrdps):
-        """Set a new QR detections rate for the viewport ticker.
+        """Set a new QR detections rate.
 
         :param qrdps: QR detections per second.
         :type qrdps: int
@@ -81,6 +87,19 @@ class MainCore(QtCore.QObject):
         self.qr_detection_ticker.stop()
         self.qr_detection_ticker.setInterval(int(self._qrd_interval * 1000))
         self.qr_detection_ticker.start()
+
+    @QtCore.pyqtSlot(int)
+    def set_projector_ticker_rate(self, pfps):
+        """Set a new projector frame rate.
+
+        :param pfps: Projector frames per second.
+        :type pfps: int
+        """
+        self._pfps = pfps
+        self._pfps_interval = 1.0 / self._pfps
+        self.projector_ticker.stop()
+        self.projector_ticker.setInterval(int(self._pfps_interval * 1000))
+        self.projector_ticker.start()
 
     @QtCore.pyqtSlot(float)
     def set_safe_image_grab_coefficient(self, value):
@@ -181,4 +200,6 @@ class MainCore(QtCore.QObject):
     def stop_all(self):
         """Stop all timers and cameras."""
         self.refresh_ticker.stop()
+        self.qr_detection_ticker.stop()
+        self.projector_ticker.stop()
         self.camera_manager.release_all()
