@@ -26,26 +26,23 @@ import cv2 as cv
 from . import viewport_label, constants, common
 
 
-MOVE_KEY_POINTS_DICT = {
-    "a": QtCore.QPoint(-1, 0),
-    "s": QtCore.QPoint(0, -1),
-    "d": QtCore.QPoint(1, 0),
-    "w": QtCore.QPoint(0, 1),
-}
-
-
 class ProjectorDialog(QtWidgets.QDialog):
     """Projector dialog to draw information on board."""
 
     corner_changed = QtCore.pyqtSignal(int, QtCore.QPoint)
 
-    def __init__(self, parent=None):
+    def __init__(self, core, parent=None):
         """Initialize.
+
+        :param core: The main core.
+        :type core: :class:`MainCore`
 
         :param parent: The parent widget. (None)
         :type parent: :class:`QWidget`
         """
         super().__init__(parent=parent, flags=QtCore.Qt.WindowType.WindowTitleHint | QtCore.Qt.WindowType.CustomizeWindowHint)
+
+        self.core = core
         self._is_fullscreen = False
         self._corner_points_list = [
             QtCore.QPoint(10, 260),
@@ -124,15 +121,15 @@ class ProjectorDialog(QtWidgets.QDialog):
             self._borders_in_bold = not self._borders_in_bold
             self.update_corner_overlay()
 
-        elif key_text in MOVE_KEY_POINTS_DICT and self._selected_corner_index is not None:
+        elif key_text in constants.MOVE_KEY_POINTS_DICT and self._selected_corner_index is not None:
             width = self._base_image.width()
             height = self._base_image.height()
 
             self._corner_points_list[self._selected_corner_index].setX(
-                min(max(0, self._corner_points_list[self._selected_corner_index].x() + MOVE_KEY_POINTS_DICT[key_text].x()), width - 1)
+                min(max(0, self._corner_points_list[self._selected_corner_index].x() + constants.MOVE_KEY_POINTS_DICT[key_text].x()), width - 1)
             )
             self._corner_points_list[self._selected_corner_index].setY(
-                min(max(0, self._corner_points_list[self._selected_corner_index].y() + MOVE_KEY_POINTS_DICT[key_text].y()), height - 1)
+                min(max(0, self._corner_points_list[self._selected_corner_index].y() + constants.MOVE_KEY_POINTS_DICT[key_text].y()), height - 1)
             )
             self.update_corner_overlay()
 
@@ -149,7 +146,7 @@ class ProjectorDialog(QtWidgets.QDialog):
             closest_corner_index = None
             closest_distance = None
 
-            for corner_index in constants.TABLE_CORNERS_DRAWING_ORDER:
+            for corner_index in constants.TABLE_CORNER_DRAWING_ORDER:
                 test_pos = self._corner_points_list[corner_index] - pos_mouse
                 test_distance = test_pos.manhattanLength()
                 if (
@@ -179,10 +176,10 @@ class ProjectorDialog(QtWidgets.QDialog):
         """"""
         projector_points = np.float32(
             [
-                [self._corner_points_list[constants.TABLE_CORNERS_INDEX_BL].x(), self._corner_points_list[constants.TABLE_CORNERS_INDEX_BL].y()],
-                [self._corner_points_list[constants.TABLE_CORNERS_INDEX_TL].x(), self._corner_points_list[constants.TABLE_CORNERS_INDEX_TL].y()],
-                [self._corner_points_list[constants.TABLE_CORNERS_INDEX_TR].x(), self._corner_points_list[constants.TABLE_CORNERS_INDEX_TR].y()],
-                [self._corner_points_list[constants.TABLE_CORNERS_INDEX_BR].x(), self._corner_points_list[constants.TABLE_CORNERS_INDEX_BR].y()],
+                [self._corner_points_list[constants.TABLE_CORNER_INDEX_BL].x(), self._corner_points_list[constants.TABLE_CORNER_INDEX_BL].y()],
+                [self._corner_points_list[constants.TABLE_CORNER_INDEX_TL].x(), self._corner_points_list[constants.TABLE_CORNER_INDEX_TL].y()],
+                [self._corner_points_list[constants.TABLE_CORNER_INDEX_TR].x(), self._corner_points_list[constants.TABLE_CORNER_INDEX_TR].y()],
+                [self._corner_points_list[constants.TABLE_CORNER_INDEX_BR].x(), self._corner_points_list[constants.TABLE_CORNER_INDEX_BR].y()],
             ]
         )
 
@@ -239,13 +236,13 @@ class ProjectorDialog(QtWidgets.QDialog):
             painter.setPen(pen)
             painter.drawPolyline(self._corner_points_list + self._corner_points_list[:1])
             painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.green, 2, QtCore.Qt.PenStyle.SolidLine))
-            painter.drawEllipse(self._corner_points_list[constants.TABLE_CORNERS_INDEX_BL], 10, 10)
+            painter.drawEllipse(self._corner_points_list[constants.TABLE_CORNER_INDEX_BL], 10, 10)
             painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.blue, 2, QtCore.Qt.PenStyle.SolidLine))
-            painter.drawEllipse(self._corner_points_list[constants.TABLE_CORNERS_INDEX_TL], 10, 10)
+            painter.drawEllipse(self._corner_points_list[constants.TABLE_CORNER_INDEX_TL], 10, 10)
             painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.red, 2, QtCore.Qt.PenStyle.SolidLine))
-            painter.drawEllipse(self._corner_points_list[constants.TABLE_CORNERS_INDEX_TR], 10, 10)
+            painter.drawEllipse(self._corner_points_list[constants.TABLE_CORNER_INDEX_TR], 10, 10)
             painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.yellow, 2, QtCore.Qt.PenStyle.SolidLine))
-            painter.drawEllipse(self._corner_points_list[constants.TABLE_CORNERS_INDEX_BR], 10, 10)
+            painter.drawEllipse(self._corner_points_list[constants.TABLE_CORNER_INDEX_BR], 10, 10)
             painter.end()
         self.refresh_image()
 

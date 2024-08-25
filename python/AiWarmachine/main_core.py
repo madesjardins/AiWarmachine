@@ -20,7 +20,7 @@ import time
 
 from PyQt6 import QtCore, QtGui
 
-from . import constants, camera_manager, camera_calibration, common
+from . import constants, camera_manager, camera_calibration, common, qr_detection, game_table
 
 
 class MainCore(QtCore.QObject):
@@ -43,6 +43,8 @@ class MainCore(QtCore.QObject):
 
         self.camera_manager = camera_manager.CameraManager()
         self.camera_calibration_helper = camera_calibration.CameraCalibrationHelper()
+        self.game_table = game_table.GameTable()
+        self.qr_detector = qr_detection.QRDetector(self)
 
         self._init_tickers()
 
@@ -50,6 +52,9 @@ class MainCore(QtCore.QObject):
         """Initialize the different tickers."""
         self.refresh_ticker = QtCore.QTimer()
         self.refresh_ticker.setInterval(int(self._tick_interval * 1000))
+
+        self.qr_detection_ticker = QtCore.QTimer()
+        self.qr_detection_ticker.setInterval(int(self._qrd_interval * 1000))
 
     @QtCore.pyqtSlot(int)
     def set_refresh_ticker_rate(self, tps):
@@ -64,6 +69,19 @@ class MainCore(QtCore.QObject):
         self.refresh_ticker.setInterval(int(self._tick_interval * 1000))
         self.refresh_ticker.start()
 
+    @QtCore.pyqtSlot(int)
+    def set_qr_detection_ticker_rate(self, qrdps):
+        """Set a new QR detections rate for the viewport ticker.
+
+        :param qrdps: QR detections per second.
+        :type qrdps: int
+        """
+        self._qrdps = qrdps
+        self._qrd_interval = 1.0 / self._qrdps
+        self.qr_detection_ticker.stop()
+        self.qr_detection_ticker.setInterval(int(self._qrd_interval * 1000))
+        self.qr_detection_ticker.start()
+
     @QtCore.pyqtSlot(float)
     def set_safe_image_grab_coefficient(self, value):
         """Set the safe image grab coefficient.
@@ -75,7 +93,13 @@ class MainCore(QtCore.QObject):
         """
         self._safe_image_grab_coefficient = value
 
-    def get_image(self, in_calibration=False, number_of_squares_w=23, number_of_squares_h=18):
+    def get_image(
+        self,
+        in_calibration=False,
+        number_of_squares_w=23,
+        number_of_squares_h=18,
+        simply_latest_np_image=False
+    ):
         """Get image from current camera.
 
         :param in_calibration: Whether or not this frame is for calibration. (False)
@@ -87,6 +111,9 @@ class MainCore(QtCore.QObject):
         :param number_of_squares_h: The number of squares on the checkerboard's height direction. (18)
         :type number_of_squares_h: int
 
+        :param simply_latest_np_image: If set to True, simply return the latest numpy ndarray image if camera is calibrated. (False)
+        :type simply_latest_np_image: bool
+
         :return: Image and info string "{width}x{height} @ {fps}fps".
         :rtype: tuple[:class:`QImage`, str]
 
@@ -95,6 +122,12 @@ class MainCore(QtCore.QObject):
         current_camera = self.camera_manager.get_camera()
         if current_camera is None:
             return None, None
+
+        if simply_latest_np_image:
+            if current_camera.is_calibrated() and self.simply_latest_np_image is not None:
+                return self.latest_np_image, None
+            else:
+                return None, None
 
         if self._previous_processing_time >= self._safe_image_grab_coefficient * self._tick_interval:
             self._previous_processing_time -= self._tick_interval
@@ -132,11 +165,12 @@ class MainCore(QtCore.QObject):
             elif current_camera.is_calibrated():
                 camera_frame = current_camera.undistort(camera_frame)
 
+            self.latest_np_image = camera_frame
             self.latest_image = QtGui.QImage(
-                camera_frame,
-                camera_frame.shape[1],
-                camera_frame.shape[0],
-                camera_frame.strides[0],
+                self.latest_np_image,
+                self.latest_np_image.shape[1],
+                self.latest_np_image.shape[0],
+                self.latest_np_image.strides[0],
                 QtGui.QImage.Format.Format_BGR888
             )
 

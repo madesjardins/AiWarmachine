@@ -409,3 +409,21 @@ def load_camera_data(filepath):
     camera_data['rvec'] = np.array(camera_data['rvec'], np.float32) if camera_data['rvec'] is not None else None
 
     return camera_data
+
+
+def convert_qimage_to_numpy_array(image):
+    """Convert a QImage to a numpy array.
+
+    :param image: The image to convert.
+    :type image: :class:`QImage`
+
+    :return: Numpy image.
+    :rtype: :class:`numpy.ndarray`
+    """
+    width = image.width()
+    height = image.height()
+
+    ptr = image.constBits()
+    ptr.setsize(height * width * 3)
+    arr = np.array(ptr).reshape(height, width, 3)  # Copies the data
+    return arr

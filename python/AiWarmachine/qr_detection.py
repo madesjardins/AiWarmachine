@@ -24,16 +24,7 @@ import pyboof as pb
 import numpy as np
 from PyQt6 import QtCore, QtGui
 
-
-def load_qimage_into_numpy_array(image):
-    """"""
-    width = image.width()
-    height = image.height()
-
-    ptr = image.constBits()
-    ptr.setsize(height * width * 3)
-    arr = np.array(ptr).reshape(height, width, 3)  # Copies the data
-    return arr
+from . import common
 
 
 class QRDetector(QtCore.QThread):
@@ -41,9 +32,10 @@ class QRDetector(QtCore.QThread):
 
     latest_data_ready = QtCore.pyqtSignal(dict, int, int, int, int)
 
-    def __init__(self):
+    def __init__(self, core):
         """Initializer."""
         super().__init__()
+        self.core = core
         self._detector = pb.FactoryFiducial(np.uint8).microqr()
         self._image_boof = None
         self._latest_data = {}
@@ -56,6 +48,10 @@ class QRDetector(QtCore.QThread):
         """Reset the latest data."""
         self._latest_data = {}
         self._image_np = None
+
+    @QtCore.pyqtSlot()
+    def tick(self):
+        """Get the latest frame and to a detection on it."""
 
     @property
     def data(self):

@@ -7,13 +7,13 @@
     <x>0</x>
     <y>0</y>
     <width>1272</width>
-    <height>842</height>
+    <height>760</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>0</width>
-    <height>720</height>
+    <height>760</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -1231,11 +1231,11 @@
          <property name="maximumSize">
           <size>
            <width>16777215</width>
-           <height>240</height>
+           <height>204</height>
           </size>
          </property>
          <property name="currentIndex">
-          <number>2</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="tab_calibration_images">
           <attribute name="title">
@@ -1243,9 +1243,9 @@
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <item>
-            <layout class="QGridLayout" name="gridLayout">
+            <layout class="QGridLayout" name="grid_camera_calibration">
              <item row="1" column="1">
-              <layout class="QHBoxLayout" name="horizontalLayout_11">
+              <layout class="QHBoxLayout" name="hbox_calibration_images">
                <item>
                 <widget class="QPushButton" name="push_calibration_image_top">
                  <property name="sizePolicy">
@@ -1368,71 +1368,38 @@
                </property>
               </widget>
              </item>
-             <item row="2" column="1">
-              <layout class="QHBoxLayout" name="hbox_calibrate_buttons">
-               <item>
-                <spacer name="spacer_calibration_images_5">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="sizeType">
-                  <enum>QSizePolicy::Expanding</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>5</width>
-                   <height>5</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
-               <item>
-                <widget class="QPushButton" name="push_calibrate">
-                 <property name="focusPolicy">
-                  <enum>Qt::NoFocus</enum>
-                 </property>
-                 <property name="text">
-                  <string>Calibrate</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="push_uncalibrate">
-                 <property name="focusPolicy">
-                  <enum>Qt::NoFocus</enum>
-                 </property>
-                 <property name="text">
-                  <string>Uncalibrate</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <spacer name="spacer_calibration_images_6">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="sizeType">
-                  <enum>QSizePolicy::Expanding</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>5</width>
-                   <height>5</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
-              </layout>
+             <item row="1" column="2">
+              <spacer name="hspacer_camera_calibration">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeType">
+                <enum>QSizePolicy::Expanding</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>5</width>
+                 <height>5</height>
+                </size>
+               </property>
+              </spacer>
              </item>
              <item row="1" column="0">
               <layout class="QGridLayout" name="grid_calibration">
                <property name="topMargin">
                 <number>0</number>
                </property>
+               <item row="1" column="0">
+                <widget class="QLabel" name="label_number_of_squares_h">
+                 <property name="text">
+                  <string>Number of squares H:</string>
+                 </property>
+                </widget>
+               </item>
                <item row="1" column="1">
                 <widget class="QSpinBox" name="spin_number_of_squares_h">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -1445,7 +1412,7 @@
                  </property>
                  <property name="maximumSize">
                   <size>
-                   <width>50</width>
+                   <width>16777215</width>
                    <height>16777215</height>
                   </size>
                  </property>
@@ -1457,7 +1424,7 @@
                <item row="0" column="1">
                 <widget class="QSpinBox" name="spin_number_of_squares_w">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -1470,35 +1437,12 @@
                  </property>
                  <property name="maximumSize">
                   <size>
-                   <width>50</width>
+                   <width>16777215</width>
                    <height>16777215</height>
                   </size>
                  </property>
                  <property name="value">
                   <number>23</number>
-                 </property>
-                </widget>
-               </item>
-               <item row="2" column="0">
-                <spacer name="spacer_calibration_images_3">
-                 <property name="orientation">
-                  <enum>Qt::Vertical</enum>
-                 </property>
-                 <property name="sizeType">
-                  <enum>QSizePolicy::MinimumExpanding</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>5</width>
-                   <height>5</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
-               <item row="1" column="0">
-                <widget class="QLabel" name="label_number_of_squares_h">
-                 <property name="text">
-                  <string>Number of squares H:</string>
                  </property>
                 </widget>
                </item>
@@ -1509,20 +1453,74 @@
                  </property>
                 </widget>
                </item>
+               <item row="2" column="0">
+                <widget class="QPushButton" name="push_camera_calibrate">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>108</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="focusPolicy">
+                  <enum>Qt::NoFocus</enum>
+                 </property>
+                 <property name="text">
+                  <string>Calibrate</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QPushButton" name="push_camera_uncalibrate">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>108</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="focusPolicy">
+                  <enum>Qt::NoFocus</enum>
+                 </property>
+                 <property name="text">
+                  <string>Uncalibrate</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1">
+                <spacer name="vspacer_checkerboard">
+                 <property name="orientation">
+                  <enum>Qt::Vertical</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>5</width>
+                   <height>1</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
               </layout>
              </item>
-             <item row="1" column="2">
-              <spacer name="spacer_calibration_images_4">
+             <item row="2" column="1">
+              <spacer name="vspacer_camera_calibration_images">
                <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeType">
-                <enum>QSizePolicy::Expanding</enum>
+                <enum>Qt::Vertical</enum>
                </property>
                <property name="sizeHint" stdset="0">
                 <size>
                  <width>5</width>
-                 <height>5</height>
+                 <height>1</height>
                 </size>
                </property>
               </spacer>
@@ -1546,13 +1544,13 @@
          </widget>
          <widget class="QWidget" name="tab_table">
           <attribute name="title">
-           <string>Table</string>
+           <string>Table Calibration</string>
           </attribute>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
            <item>
-            <layout class="QVBoxLayout" name="verticalLayout_3">
+            <layout class="QVBoxLayout" name="vbox_table_calibration_settings">
              <item>
-              <widget class="QLabel" name="label_calibration_images_3">
+              <widget class="QLabel" name="label_table_calibration_settings">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -1579,7 +1577,7 @@
               </widget>
              </item>
              <item>
-              <layout class="QGridLayout" name="gridLayout_2">
+              <layout class="QGridLayout" name="grid_table_calibration_settings">
                <item row="0" column="0">
                 <widget class="QLabel" name="label_table_name">
                  <property name="text">
@@ -1743,11 +1741,18 @@
               </layout>
              </item>
              <item>
-              <layout class="QHBoxLayout" name="horizontalLayout">
+              <layout class="QHBoxLayout" name="hbox_table_calibration">
                <item>
-                <widget class="QPushButton" name="push_calculate_perspective_transforms">
+                <widget class="QPushButton" name="push_table_calibrate">
                  <property name="text">
-                  <string>Calculate Perspective Transforms</string>
+                  <string>Calibrate</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="push_table_uncalibrate">
+                 <property name="text">
+                  <string>Uncalibrate</string>
                  </property>
                 </widget>
                </item>
@@ -1778,7 +1783,7 @@
               </layout>
              </item>
              <item>
-              <spacer name="verticalSpacer">
+              <spacer name="vspacer_table_settings">
                <property name="orientation">
                 <enum>Qt::Vertical</enum>
                </property>
@@ -1796,16 +1801,16 @@
             </layout>
            </item>
            <item>
-            <widget class="Line" name="line">
+            <widget class="Line" name="line_table_calibration">
              <property name="orientation">
               <enum>Qt::Vertical</enum>
              </property>
             </widget>
            </item>
            <item>
-            <layout class="QVBoxLayout" name="verticalLayout_4">
+            <layout class="QVBoxLayout" name="vbox_table_corners">
              <item>
-              <widget class="QLabel" name="label_calibration_images_4">
+              <widget class="QLabel" name="label_table_corners">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -1832,9 +1837,9 @@
               </widget>
              </item>
              <item>
-              <layout class="QGridLayout" name="grid_table">
+              <layout class="QGridLayout" name="grid_table_corners">
                <item row="1" column="2">
-                <layout class="QHBoxLayout" name="horizontalLayout_2">
+                <layout class="QHBoxLayout" name="hbox_table_corners_camera_bl">
                  <property name="spacing">
                   <number>2</number>
                  </property>
@@ -1921,7 +1926,7 @@
                 </layout>
                </item>
                <item row="0" column="1">
-                <widget class="QLabel" name="label_table_corner_bl_location_3">
+                <widget class="QLabel" name="label_table_corner_color">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
                    <horstretch>0</horstretch>
@@ -1934,7 +1939,7 @@
                 </widget>
                </item>
                <item row="1" column="0">
-                <widget class="QLabel" name="label_table_corner_bl_location">
+                <widget class="QLabel" name="label_table_corner_location_bl">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
                    <horstretch>0</horstretch>
@@ -1947,7 +1952,7 @@
                 </widget>
                </item>
                <item row="3" column="0">
-                <widget class="QLabel" name="label_table_corner_tr_location">
+                <widget class="QLabel" name="label_table_corner_location_tr">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
                    <horstretch>0</horstretch>
@@ -1960,7 +1965,7 @@
                 </widget>
                </item>
                <item row="2" column="0">
-                <widget class="QLabel" name="label_table_corner_tl_location">
+                <widget class="QLabel" name="label_table_corner_location_tl">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
                    <horstretch>0</horstretch>
@@ -1973,7 +1978,7 @@
                 </widget>
                </item>
                <item row="4" column="0">
-                <widget class="QLabel" name="label_table_corner_br_location">
+                <widget class="QLabel" name="label_table_corner_location_br">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
                    <horstretch>0</horstretch>
@@ -1986,7 +1991,7 @@
                 </widget>
                </item>
                <item row="4" column="1">
-                <widget class="QLabel" name="label_table_corner_br_color">
+                <widget class="QLabel" name="label_table_corner_color_br">
                  <property name="maximumSize">
                   <size>
                    <width>16</width>
@@ -2002,7 +2007,7 @@
                 </widget>
                </item>
                <item row="0" column="0">
-                <widget class="QLabel" name="label_table_corner_bl_location_2">
+                <widget class="QLabel" name="label_table_corner_location_position">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
                    <horstretch>0</horstretch>
@@ -2015,7 +2020,7 @@
                 </widget>
                </item>
                <item row="0" column="2">
-                <widget class="QLabel" name="label_table_corner_bl_location_4">
+                <widget class="QLabel" name="label_table_corner_camera">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
                    <horstretch>0</horstretch>
@@ -2028,7 +2033,7 @@
                 </widget>
                </item>
                <item row="0" column="3">
-                <widget class="QLabel" name="label_table_corner_bl_location_5">
+                <widget class="QLabel" name="label_table_corner_projector">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
                    <horstretch>0</horstretch>
@@ -2041,7 +2046,7 @@
                 </widget>
                </item>
                <item row="1" column="1">
-                <widget class="QLabel" name="label_table_corner_bl_color">
+                <widget class="QLabel" name="label_table_corner_color_bl">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                    <horstretch>0</horstretch>
@@ -2063,7 +2068,7 @@
                 </widget>
                </item>
                <item row="2" column="2">
-                <layout class="QHBoxLayout" name="horizontalLayout_4">
+                <layout class="QHBoxLayout" name="hbox_table_corners_camera_tl">
                  <item>
                   <widget class="QSpinBox" name="spin_table_camera_corner_tl_x">
                    <property name="sizePolicy">
@@ -2147,7 +2152,7 @@
                 </layout>
                </item>
                <item row="4" column="2">
-                <layout class="QHBoxLayout" name="horizontalLayout_6">
+                <layout class="QHBoxLayout" name="hbox_table_corners_camera_br">
                  <item>
                   <widget class="QSpinBox" name="spin_table_camera_corner_br_x">
                    <property name="sizePolicy">
@@ -2231,7 +2236,7 @@
                 </layout>
                </item>
                <item row="1" column="3">
-                <layout class="QHBoxLayout" name="horizontalLayout_7">
+                <layout class="QHBoxLayout" name="hbox_table_corners_projector_bl">
                  <property name="spacing">
                   <number>2</number>
                  </property>
@@ -2318,7 +2323,7 @@
                 </layout>
                </item>
                <item row="3" column="2">
-                <layout class="QHBoxLayout" name="horizontalLayout_5">
+                <layout class="QHBoxLayout" name="hbox_table_corners_camera_tr">
                  <item>
                   <widget class="QSpinBox" name="spin_table_camera_corner_tr_x">
                    <property name="sizePolicy">
@@ -2402,7 +2407,7 @@
                 </layout>
                </item>
                <item row="2" column="3">
-                <layout class="QHBoxLayout" name="horizontalLayout_8">
+                <layout class="QHBoxLayout" name="hbox_table_corners_projector_tl">
                  <item>
                   <widget class="QSpinBox" name="spin_table_projector_corner_tl_x">
                    <property name="sizePolicy">
@@ -2486,7 +2491,7 @@
                 </layout>
                </item>
                <item row="3" column="3">
-                <layout class="QHBoxLayout" name="horizontalLayout_9">
+                <layout class="QHBoxLayout" name="hbox_table_corners_projector_tr">
                  <item>
                   <widget class="QSpinBox" name="spin_table_projector_corner_tr_x">
                    <property name="sizePolicy">
@@ -2570,7 +2575,7 @@
                 </layout>
                </item>
                <item row="4" column="3">
-                <layout class="QHBoxLayout" name="horizontalLayout_10">
+                <layout class="QHBoxLayout" name="hbox_table_corners_projector_br">
                  <item>
                   <widget class="QSpinBox" name="spin_table_projector_corner_br_x">
                    <property name="sizePolicy">
@@ -2654,7 +2659,7 @@
                 </layout>
                </item>
                <item row="2" column="1">
-                <widget class="QLabel" name="label_table_corner_tl_color">
+                <widget class="QLabel" name="label_table_corner_color_tl">
                  <property name="maximumSize">
                   <size>
                    <width>16</width>
@@ -2670,7 +2675,7 @@
                 </widget>
                </item>
                <item row="3" column="1">
-                <widget class="QLabel" name="label_table_corner_tr_color">
+                <widget class="QLabel" name="label_table_corner_color_tr">
                  <property name="maximumSize">
                   <size>
                    <width>16</width>
@@ -2688,7 +2693,7 @@
               </layout>
              </item>
              <item>
-              <spacer name="verticalSpacer_2">
+              <spacer name="vspacer_corners">
                <property name="orientation">
                 <enum>Qt::Vertical</enum>
                </property>
@@ -2706,7 +2711,7 @@
             </layout>
            </item>
            <item>
-            <spacer name="verticalSpacer_3">
+            <spacer name="hspacer_table_calibration">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
@@ -2728,13 +2733,6 @@
            <string>Advanced</string>
           </attribute>
           <layout class="QGridLayout" name="gridLayout_3">
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_viewport_refresh_rate">
-             <property name="text">
-              <string>Viewport Refresh Rate Target</string>
-             </property>
-            </widget>
-           </item>
            <item row="0" column="1">
             <widget class="QSpinBox" name="spin_viewport_refresh_rate">
              <property name="minimum">
@@ -2748,8 +2746,8 @@
              </property>
             </widget>
            </item>
-           <item row="2" column="0">
-            <spacer name="verticalSpacer_4">
+           <item row="3" column="0">
+            <spacer name="vspacer_advanced">
              <property name="orientation">
               <enum>Qt::Vertical</enum>
              </property>
@@ -2764,8 +2762,15 @@
              </property>
             </spacer>
            </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_viewport_refresh_rate">
+             <property name="text">
+              <string>Viewport Refresh Rate Target</string>
+             </property>
+            </widget>
+           </item>
            <item row="0" column="2">
-            <spacer name="horizontalSpacer_2">
+            <spacer name="hspacer_advanced">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
@@ -2791,6 +2796,29 @@
              </property>
              <property name="value">
               <double>1.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_table_resolution_factor">
+             <property name="text">
+              <string>Game Table Resolution Factor</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QSpinBox" name="spin_table_resolution_factor">
+             <property name="suffix">
+              <string>mm/px</string>
+             </property>
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>4</number>
+             </property>
+             <property name="value">
+              <number>2</number>
              </property>
             </widget>
            </item>
@@ -2824,7 +2852,7 @@
             <x>0</x>
             <y>0</y>
             <width>897</width>
-            <height>529</height>
+            <height>451</height>
            </rect>
           </property>
           <property name="sizePolicy">
@@ -2855,26 +2883,6 @@
        </item>
        <item>
         <layout class="QGridLayout" name="grid_display_and_snapshot">
-         <item row="0" column="2">
-          <widget class="QCheckBox" name="check_qr_detection">
-           <property name="text">
-            <string>QR Detection</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QCheckBox" name="check_display_undistorted">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="focusPolicy">
-            <enum>Qt::NoFocus</enum>
-           </property>
-           <property name="text">
-            <string>Undistorted</string>
-           </property>
-          </widget>
-         </item>
          <item row="0" column="0">
           <widget class="QCheckBox" name="check_display_actual_resolution">
            <property name="focusPolicy">
@@ -2885,7 +2893,7 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="4">
+         <item row="0" column="2">
           <widget class="QLineEdit" name="edit_viewport_resolution">
            <property name="enabled">
             <bool>false</bool>
@@ -2913,7 +2921,7 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="3">
+         <item row="0" column="1">
           <spacer name="horizontalSpacer">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>

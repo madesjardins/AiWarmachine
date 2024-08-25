@@ -21,21 +21,16 @@ import traceback
 import re
 from functools import partial
 from datetime import datetime
-import json
 import time
 
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import cv2 as cv
-import numpy as np
 
-from . import common, constants, game_table, viewport_label, qr_detection, projector_dialog
+from . import common, constants, viewport_label, projector_dialog
 
 
 class MainDialog(QtWidgets.QDialog):
     """Main dialog."""
-
-    analyze_qr_image = QtCore.pyqtSignal(object, int, int, int, int)
-    update_projector_game_overlay = QtCore.pyqtSignal(dict)
 
     def __init__(self, core, parent=None):
         """Initialize.
@@ -50,29 +45,14 @@ class MainDialog(QtWidgets.QDialog):
 
         self.core = core
         self._disable_camera_settings_change = False
-
         self._in_calibration = False
         self._previous_time = time.time()
-
-        self._image_overlay = None
-        self._disable_table_change = False
-        self._table = game_table.GameTable()
-
-        self._qr_detection_overlay = None
-        self._overlay_need_update = True
-        self._model_dectector = None
-        self._detected_models_list = []
-        self._table_camera_corner_points_list = []
-        self._qr_detector = qr_detection.QRDetector()
-        self.latest_qr_detection_data = {}
         self._selected_corner_index = None
-        self._table_overlay = None
-        self._camera_to_game_matrix = None
-        self._game_to_camera_matrix = None
+        self._selected_corner_offset = QtCore.QPoint(0, 0)
 
         self._init_ui()
         self._init_connections()
-        self.launch_projector_dialog()
+        self._init_game_table()
         self.show()
 
     def _init_ui(self):
@@ -88,7 +68,7 @@ class MainDialog(QtWidgets.QDialog):
         self.ui.scroll_viewport_widget.layout().addWidget(self.ui.label_viewport_image)
 
         self.fill_current_camera_settings(default=True)
-        self.set_enabled_for_calibrated_camera()
+        self.set_enabled_for_calibrations()
 
         if constants.IS_LINUX:
             self.ui.slider_camera_focus.hide()
@@ -104,7 +84,7 @@ class MainDialog(QtWidgets.QDialog):
                 (self.ui.spin_table_camera_corner_tr_x, self.ui.spin_table_camera_corner_tr_y),
                 (self.ui.spin_table_camera_corner_br_x, self.ui.spin_table_camera_corner_br_y)
             ],
-            "Projector": [
+            "projector": [
                 (self.ui.spin_table_projector_corner_bl_x, self.ui.spin_table_projector_corner_bl_y),
                 (self.ui.spin_table_projector_corner_tl_x, self.ui.spin_table_projector_corner_tl_y),
                 (self.ui.spin_table_projector_corner_tr_x, self.ui.spin_table_projector_corner_tr_y),
@@ -112,10 +92,15 @@ class MainDialog(QtWidgets.QDialog):
             ]
         }
 
+        self.launch_projector_dialog()
+
     def _init_connections(self):
         """Initialize connections."""
+        # General events
         self.ui.push_quit.clicked.connect(self.close)
+        self.ui.label_viewport_image.key_press_event.connect(self.key_pressed)
 
+        # Cameras list
         self.ui.push_add_camera.clicked.connect(self.add_camera)
         self.ui.push_delete_camera.clicked.connect(self.delete_camera)
         self.ui.list_cameras.itemSelectionChanged.connect(self.set_viewport_to_selected)
@@ -143,33 +128,30 @@ class MainDialog(QtWidgets.QDialog):
         self.ui.slider_camera_sharpness.valueChanged.connect(partial(self.set_camera_prop_value, cv.CAP_PROP_SHARPNESS))
         self.ui.push_camera_sharpness_reset.clicked.connect(partial(self.reset_camera_slider, self.ui.slider_camera_sharpness, 128))
 
-        # calibration
+        # Camera Calibration
         self.ui.push_calibration_image_top.clicked.connect(partial(self.trigger_calibration_image, "top"))
         self.ui.push_calibration_image_front.clicked.connect(partial(self.trigger_calibration_image, "front"))
         self.ui.push_calibration_image_side.clicked.connect(partial(self.trigger_calibration_image, "side"))
-        self.ui.push_calibrate.clicked.connect(self.calibrate)
-        self.ui.push_uncalibrate.clicked.connect(self.uncalibrate)
+        self.ui.push_camera_calibrate.clicked.connect(self.calibrate)
+        self.ui.push_camera_uncalibrate.clicked.connect(self.uncalibrate)
 
-        # table
-        # self.ui.push_table_save.clicked.connect(self.table_save)
-        # self.ui.push_table_load.clicked.connect(self.table_load)
-        # self.ui.edit_table_name.textEdited.connect(self.set_table_name)
-        self.ui.label_viewport_image.mouse_press_event.connect(partial(self.update_table_camera_corners, True))
-        self.ui.label_viewport_image.mouse_drag_event.connect(partial(self.update_table_camera_corners, False))
-        self.ui.push_calculate_perspective_transforms.clicked.connect(self.calculate_perspective_transforms)
-
-        # snapshot
+        # Snapshot
         self.ui.push_snapshot_save.clicked.connect(self.snapshot_save)
 
-        # tick
+        # Tick
         self.core.refresh_ticker.timeout.connect(self.tick)
         self.ui.spin_viewport_refresh_rate.valueChanged.connect(self.core.set_refresh_ticker_rate)
         self.ui.double_safe_image_grab_coefficient.valueChanged.connect(self.core.set_safe_image_grab_coefficient)
 
-        # QR Detection
-        self._qr_detector.latest_data_ready.connect(self.update_latest_qr_detection_data)
-        self.analyze_qr_image.connect(self._qr_detector.set_image)
+    def launch_projector_dialog(self):
+        """Pop the projector dialog."""
+        self._projector_dialog = projector_dialog.ProjectorDialog(core=self.core, parent=self)
 
+    # #############################################
+    #
+    # GENERAL EVENTS
+    #
+    # #############################################
     @QtCore.pyqtSlot(QtGui.QCloseEvent)
     def closeEvent(self, a0):
         """Stop ticker and release all cameras."""
@@ -185,11 +167,42 @@ class MainDialog(QtWidgets.QDialog):
         """Close dialog."""
         return super().close()
 
-    # #####################
+    @QtCore.pyqtSlot(str)
+    def key_pressed(self, key_text):
+        """A key was pressed.
+
+        :param key_text: The text value of the key.
+        :type key_text: str
+        """
+        # Set Display actual resolution
+        if key_text == "f":
+            if self.ui.check_display_actual_resolution.isChecked():
+                self.ui.check_display_actual_resolution.setCheckState(QtCore.Qt.CheckState.Unchecked)
+            else:
+                self.ui.check_display_actual_resolution.setCheckState(QtCore.Qt.CheckState.Checked)
+
+        # Move by 1 pixel selected corner ['w', 'a', 's', 'd']
+        if key_text in constants.MOVE_KEY_POINTS_DICT and self._selected_corner_index is not None:
+            width = self.latest_image.width()
+            height = self.latest_image.height()
+            corner_points_list = self.core.game_table.get_in_camera_corners_as_points()
+            self._table_corners_widgets_dict['camera'][self._selected_corner_index][0].setValue(
+                min(max(0, corner_points_list[self._selected_corner_index].x() + constants.MOVE_KEY_POINTS_DICT[key_text].x()), width - 1)
+            )
+            self._table_corners_widgets_dict['camera'][self._selected_corner_index][1].setValue(
+                min(max(0, corner_points_list[self._selected_corner_index].y() + constants.MOVE_KEY_POINTS_DICT[key_text].y()), height - 1)
+            )
+
+    def set_enabled_for_calibrations(self):
+        """Set enabled/disabled on different widget based on calibrated status."""
+        self.set_enabled_for_calibrated_camera()
+        self.set_enabled_for_calibrated_table()
+
+    # #############################################
     #
     # REFRESH VIEWPORT
     #
-    # #####################
+    # #############################################
     def start_refresh_ticker(self):
         """Start the ticker."""
         self.core.refresh_ticker.stop()
@@ -217,6 +230,16 @@ class MainDialog(QtWidgets.QDialog):
         if info_str is not None:
             self.ui.edit_camera_effective_resolution.setText(info_str)
 
+        self.latest_image = image
+
+        # Table corners overlay
+        current_camera = self.core.camera_manager.get_camera()
+        is_calibrated = current_camera is not None and current_camera.is_calibrated()
+        if is_calibrated and info_str is not None:
+            corners_overlay, corners_overlay_roi = self.core.game_table.get_camera_corners_overlay()
+            if corners_overlay is not None:
+                image = common.composite_images(image, corners_overlay, corners_overlay_roi[0], corners_overlay_roi[1])
+
         if self.ui.check_display_actual_resolution.isChecked():
             self.ui.label_viewport_image.resize(image.width(), image.height())
         else:
@@ -231,7 +254,7 @@ class MainDialog(QtWidgets.QDialog):
         self._previous_time = time.time()
         self.ui.edit_viewport_resolution.setText(f"{image.width()}x{image.height()} @ {fps:0.1f}")
 
-    # ############################################
+    # #############################################
     #
     # CAMERA SETTINGS
     #
@@ -244,9 +267,9 @@ class MainDialog(QtWidgets.QDialog):
         self.ui.combo_camera_capture_resolution.setEnabled(not is_calibrated)
         self.ui.slider_camera_focus.setEnabled(not is_calibrated)
         self.ui.slider_camera_zoom.setEnabled(not is_calibrated)
-        self.ui.push_calibrate.setEnabled(not is_calibrated and has_all_calibration_images)
-        self.ui.push_calibrate.setText("Calibrated" if is_calibrated else "Calibrate")
-        self.ui.push_uncalibrate.setEnabled(is_calibrated)
+        self.ui.push_camera_calibrate.setEnabled(not is_calibrated and has_all_calibration_images)
+        self.ui.push_camera_calibrate.setText("Calibrated" if is_calibrated else "Calibrate")
+        self.ui.push_camera_uncalibrate.setEnabled(is_calibrated)
         self.ui.push_calibration_image_top.setEnabled(not is_calibrated)
         self.ui.push_calibration_image_front.setEnabled(not is_calibrated)
         self.ui.push_calibration_image_side.setEnabled(not is_calibrated)
@@ -299,7 +322,7 @@ class MainDialog(QtWidgets.QDialog):
             self.ui.push_delete_camera.setEnabled(True)
         else:
             self.ui.push_delete_camera.setEnabled(False)
-        self.set_enabled_for_calibrated_camera()
+        self.set_enabled_for_calibrations()
 
     @QtCore.pyqtSlot()
     def add_camera(self):
@@ -347,7 +370,7 @@ class MainDialog(QtWidgets.QDialog):
                 self.ui.list_cameras.takeItem(self.ui.list_cameras.currentRow())
         except Exception:
             traceback.print_exc()
-        self.set_enabled_for_calibrated_camera()
+        self.set_enabled_for_calibrations()
 
     def fill_current_camera_settings(self, default=False):
         """Fill current camera settings fields.
@@ -552,8 +575,7 @@ class MainDialog(QtWidgets.QDialog):
             # select the new camera item in list
             self.ui.list_cameras.setCurrentRow(self.ui.list_cameras.count() - 1)
 
-        self._overlay_need_update = True
-        self.set_enabled_for_calibrated_camera()
+        self.set_enabled_for_calibrations()
 
     @QtCore.pyqtSlot(str)
     def set_current_camera_device_id(self, device_id_str):
@@ -571,7 +593,7 @@ class MainDialog(QtWidgets.QDialog):
         if self.core.camera_manager.get_camera() is not None:
             self.start_refresh_ticker()
 
-    # ############################################
+    # #############################################
     #
     # CAMERA CALIBRATION
     #
@@ -593,7 +615,7 @@ class MainDialog(QtWidgets.QDialog):
         except Exception:
             traceback.print_exc()
 
-        self.set_enabled_for_calibrated_camera()
+        self.set_enabled_for_calibrations()
 
     @QtCore.pyqtSlot()
     def uncalibrate(self):
@@ -607,7 +629,7 @@ class MainDialog(QtWidgets.QDialog):
                 push_button.setText(view_name.capitalize())
                 push_button.setIcon(QtGui.QIcon())
             self.start_refresh_ticker()
-        self.set_enabled_for_calibrated_camera()
+        self.set_enabled_for_calibrations()
 
     @QtCore.pyqtSlot(str)
     def trigger_calibration_image(self, view_name):
@@ -641,9 +663,9 @@ class MainDialog(QtWidgets.QDialog):
             push_button.setIcon(QtGui.QIcon(pix))
             push_button.setIconSize(pix.rect().size())
 
-        self.set_enabled_for_calibrated_camera()
+        self.set_enabled_for_calibrations()
 
-    # ############################################
+    # #############################################
     #
     # SNAPSHOT
     #
@@ -685,238 +707,78 @@ class MainDialog(QtWidgets.QDialog):
         else:
             print("No image to save.")
 
-
-
-    # ############################################
-    #
-    # TO CLEAN
-    #
     # #############################################
-    def launch_projector_dialog(self):
-        """Pop the projector dialog."""
-        self._projector_dialog = projector_dialog.ProjectorDialog(self)
-        self.update_projector_game_overlay.connect(self._projector_dialog.update_game_overlay)
-        self._projector_dialog.corner_changed.connect(self.update_projector_corner)
+    #
+    # Game table
 
+    # #############################################
+    def _init_game_table(self, do_connections=True):
+        """Initialize game table values based on UI values and connections.
 
-
-
-
-    def update_table_overlay(self):
-        """"""
-        width = self.latest_image.width()
-        height = self.latest_image.height()
-
-        # update table overlay
-        image_size = QtCore.QSize(width, height)
-        table_overlay = QtGui.QImage(image_size, QtGui.QImage.Format.Format_ARGB32_Premultiplied)
-        painter = QtGui.QPainter(table_overlay)
-        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
-        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
-        painter.fillRect(table_overlay.rect(), QtCore.Qt.GlobalColor.transparent)
-        brush = QtGui.QBrush()
-        painter.setBrush(brush)
-        pen = QtGui.QPen(QtCore.Qt.GlobalColor.white, 1, QtCore.Qt.PenStyle.SolidLine)
-        painter.setPen(pen)
-        point_bl = QtCore.QPoint(self.ui.spin_table_camera_corner_bl_x.value(), self.ui.spin_table_camera_corner_bl_y.value())
-        point_tl = QtCore.QPoint(self.ui.spin_table_camera_corner_tl_x.value(), self.ui.spin_table_camera_corner_tl_y.value())
-        point_tr = QtCore.QPoint(self.ui.spin_table_camera_corner_tr_x.value(), self.ui.spin_table_camera_corner_tr_y.value())
-        point_br = QtCore.QPoint(self.ui.spin_table_camera_corner_br_x.value(), self.ui.spin_table_camera_corner_br_y.value())
-        painter.drawPolyline([point_bl, point_tl, point_tr, point_br, point_bl])
-        painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.green, 2, QtCore.Qt.PenStyle.SolidLine))
-        painter.drawEllipse(point_bl, 10, 10)
-        painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.blue, 2, QtCore.Qt.PenStyle.SolidLine))
-        painter.drawEllipse(point_tl, 10, 10)
-        painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.red, 2, QtCore.Qt.PenStyle.SolidLine))
-        painter.drawEllipse(point_tr, 10, 10)
-        painter.setPen(QtGui.QPen(QtCore.Qt.GlobalColor.yellow, 2, QtCore.Qt.PenStyle.SolidLine))
-        painter.drawEllipse(point_br, 10, 10)
-        painter.end()
-        self._table_overlay = table_overlay
-
-    @QtCore.pyqtSlot(bool, float, float)
-    def update_table_camera_corners(self, is_press, norm_pos_x, norm_pos_y):
-        """Update table corners values.
-
-        :param is_press: Whether this is a press event instead of a drag.
-        :type is_press: bool
+        :param do_connections: Whether or not to connect widget signals to gametable slot. (True)
+        :type do_connections: bool
         """
-        if self._table_overlay is None:
-            return
+        if do_connections:
+            self.ui.label_viewport_image.mouse_press_event.connect(partial(self.update_table_camera_corners, True))
+            self.ui.label_viewport_image.mouse_drag_event.connect(partial(self.update_table_camera_corners, False))
+            self.ui.edit_table_name.textChanged.connect(self.core.game_table.set_name)
+            self.ui.double_table_w.valueChanged.connect(self.core.game_table.set_width)
+            self.ui.double_table_h.valueChanged.connect(self.core.game_table.set_height)
+            self.ui.push_table_save.clicked.connect(self.table_save)
+            self.ui.push_table_load.clicked.connect(self.table_load)
+            self.ui.spin_table_resolution_factor.valueChanged.connect(self.core.game_table.set_resolution_factor)
+            self.ui.push_table_calibrate.clicked.connect(self.calibrate_table)
+            self.ui.push_table_uncalibrate.clicked.connect(self.uncalibrate_table)
 
-        if is_press:
-            # TODO: SIMPLIFY CODE
-            width = self.latest_image.width()
-            height = self.latest_image.height()
-            pos_mouse = QtCore.QPoint(int(norm_pos_x * width), int(norm_pos_y * height))
+        self.core.game_table.set_name(self.ui.edit_table_name.text())
+        self.core.game_table.set_width(self.ui.double_table_w.value())
+        self.core.game_table.set_height(self.ui.double_table_h.value())
 
-            self._selected_corner_index = None
-            closest_corner_index = None
-            closest_corner_point = None
-            closest_distance = None
+        for corner_type_name, corner_type_index in constants.TABLE_CORNERS_TYPE_NAME_TO_INDEX.items():
+            for corner_name, corner_index in constants.TABLE_CORNERS_NAME_TO_INDEX.items():
+                for axis_name, axis_index in constants.TABLE_CORNERS_AXIS_NAME_TO_INDEX.items():
+                    widget = getattr(self.ui, f"spin_table_{corner_type_name}_corner_{corner_name}_{axis_name}")
+                    self.core.game_table.set_corner_position(
+                        corner_type=corner_type_index,
+                        corner_index=corner_index,
+                        axis=axis_index,
+                        value=widget.value(),
+                    )
+                    if do_connections:
+                        widget.valueChanged.connect(partial(self.core.game_table.set_corner_position, corner_type_index, corner_index, axis_index))
 
-            pos_bl = QtCore.QPoint(self.ui.spin_table_camera_corner_bl_x.value(), self.ui.spin_table_camera_corner_bl_y.value())
-            pos_tl = QtCore.QPoint(self.ui.spin_table_camera_corner_tl_x.value(), self.ui.spin_table_camera_corner_tl_y.value())
-            pos_tr = QtCore.QPoint(self.ui.spin_table_camera_corner_tr_x.value(), self.ui.spin_table_camera_corner_tr_y.value())
-            pos_br = QtCore.QPoint(self.ui.spin_table_camera_corner_br_x.value(), self.ui.spin_table_camera_corner_br_y.value())
+        self.set_enabled_for_calibrations()
 
-            test_pos = pos_bl - pos_mouse
-            test_distance = test_pos.manhattanLength()
-            closest_corner_index = constants.TABLE_CORNERS_INDEX_BL
-            closest_corner_point = pos_bl
-            closest_distance = test_distance
-
-            test_pos = pos_tl - pos_mouse
-            test_distance = test_pos.manhattanLength()
-            if test_distance < closest_distance:
-                closest_corner_index = constants.TABLE_CORNERS_INDEX_TL
-                closest_corner_point = pos_tl
-                closest_distance = test_distance
-
-            test_pos = pos_tr - pos_mouse
-            test_distance = test_pos.manhattanLength()
-            if test_distance < closest_distance:
-                closest_corner_index = constants.TABLE_CORNERS_INDEX_TR
-                closest_corner_point = pos_tr
-                closest_distance = test_distance
-
-            test_pos = pos_br - pos_mouse
-            test_distance = test_pos.manhattanLength()
-            if test_distance < closest_distance:
-                closest_corner_index = constants.TABLE_CORNERS_INDEX_BR
-                closest_corner_point = pos_br
-                closest_distance = test_distance
-
-            if closest_distance <= constants.MAXIMUM_CLOSEST_TABLE_CORNER_DISTANCE:
-                self._selected_corner_index = closest_corner_index
-                self._table_offset = closest_corner_point - pos_mouse
-
-        elif self._selected_corner_index is not None:
-            width = self.latest_image.width()
-            height = self.latest_image.height()
-            pos_x = min(max(0, int(norm_pos_x * width) + self._table_offset.x()), width - 1)
-            pos_y = min(max(0, int(norm_pos_y * height) + self._table_offset.y()), height - 1)
-
-            if self._selected_corner_index == constants.TABLE_CORNERS_INDEX_BL:
-                self.ui.spin_table_camera_corner_bl_x.setValue(pos_x)
-                self.ui.spin_table_camera_corner_bl_y.setValue(pos_y)
-            elif self._selected_corner_index == constants.TABLE_CORNERS_INDEX_TL:
-                self.ui.spin_table_camera_corner_tl_x.setValue(pos_x)
-                self.ui.spin_table_camera_corner_tl_y.setValue(pos_y)
-            elif self._selected_corner_index == constants.TABLE_CORNERS_INDEX_TR:
-                self.ui.spin_table_camera_corner_tr_x.setValue(pos_x)
-                self.ui.spin_table_camera_corner_tr_y.setValue(pos_y)
-            elif self._selected_corner_index == constants.TABLE_CORNERS_INDEX_BR:
-                self.ui.spin_table_camera_corner_br_x.setValue(pos_x)
-                self.ui.spin_table_camera_corner_br_y.setValue(pos_y)
-
-            self.update_table_overlay()
+    def set_enabled_for_calibrated_table(self):
+        """Enable or disable widgets based on whether or not the current table is calibrated."""
+        current_camera = self.core.camera_manager.get_camera()
+        camera_is_calibrated = current_camera is not None and current_camera.is_calibrated()
+        is_calibrated = self.core.game_table.is_calibrated()
+        self.ui.push_table_calibrate.setEnabled(not is_calibrated and camera_is_calibrated)
+        self.ui.push_table_calibrate.setText("Calibrated" if is_calibrated else "Calibrate")
+        self.ui.push_table_uncalibrate.setEnabled(is_calibrated)
+        self.ui.double_table_w.setEnabled(not is_calibrated)
+        self.ui.double_table_h.setEnabled(not is_calibrated)
+        self.ui.spin_table_resolution_factor.setEnabled(not is_calibrated)
+        self.ui.push_table_save.setEnabled(is_calibrated)
+        self.ui.push_table_load.setEnabled(camera_is_calibrated)
 
     @QtCore.pyqtSlot()
-    def calculate_perspective_transforms(self):
-        """Calculate transform matrix from camera to game.
+    def calibrate_table(self):
+        """Calculate perspective transforms for camera -> game and game->projector."""
+        self.core.game_table.calibrate()
+        self.set_enabled_for_calibrations()
 
-            .. note:: To transform use V = MAT.dot(VEC3); P2d = V[:2]/V[2]; where VEC3 is homogeneous of original point
-        """
-        # Camera
-        camera_points = np.float32(
-            [
-                [_corner_widget_pair[0].value(), _corner_widget_pair[1].value()]
-                for _corner_widget_pair in self._table_corners_widgets_dict["camera"]
-            ]
-        )
+    @QtCore.pyqtSlot()
+    def uncalibrate_table(self):
+        """Reset prespective transforms on game table."""
+        self.core.game_table.uncalibrate()
+        self.set_enabled_for_calibrations()
 
-        game_width = self.ui.double_table_w.value()
-        game_height = self.ui.double_table_h.value()
-
-        game_points = np.float32(
-            [
-                [0.0, 0.0],
-                [0.0, game_height],
-                [game_width, game_height],
-                [game_width, 0.0]
-            ]
-        )
-
-        self._camera_to_game_matrix = cv.getPerspectiveTransform(camera_points, game_points)
-        self._game_to_camera_matrix = cv.getPerspectiveTransform(game_points, camera_points)
-
-        # Projector
-        self._projector_dialog.calculate_game_to_projector_matrix(
-            self.ui.double_table_w.value(),
-            self.ui.double_table_h.value(),
-        )
-
-    @QtCore.pyqtSlot(int, QtCore.QPoint)
-    def update_projector_corner(self, corner_index, pos):
-        """"""
-        # TODO
-        pass
-
-    @QtCore.pyqtSlot(dict, int, int, int, int)
-    def update_latest_qr_detection_data(self, latest_data, offset_x, offset_y, width, height):
-        """Update latest qr detection data."""
-        has_changes = False
-        previous_set = set(self.latest_qr_detection_data.keys())
-        new_set = set(latest_data.keys())
-        if previous_set.difference(new_set) or new_set.difference(previous_set):
-            has_changes = True
-        else:
-            for qr_message, qr_data in latest_data.items():
-                previous_x, previous_y = self.latest_qr_detection_data[qr_message]['pos']
-                if (QtCore.QPointF(qr_data['pos'][0], qr_data['pos'][1]) - QtCore.QPointF(previous_x, previous_y)).manhattanLength() > constants.QR_CENTER_EPISLON:
-                    has_changes = True
-                    break
-
-        if has_changes:  # TODO: test center diff > epsilon
-            self.latest_qr_detection_data = latest_data
-            image_size = QtCore.QSize(width, height)
-            qr_detection_overlay = QtGui.QImage(image_size, QtGui.QImage.Format.Format_ARGB32_Premultiplied)
-            painter = QtGui.QPainter(qr_detection_overlay)
-            painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
-            painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
-            painter.fillRect(qr_detection_overlay.rect(), QtCore.Qt.GlobalColor.transparent)
-            detect_brush = QtGui.QBrush()
-            painter.setBrush(detect_brush)
-            detect_pen = QtGui.QPen(QtCore.Qt.GlobalColor.red, 4, QtCore.Qt.PenStyle.SolidLine)
-            painter.setPen(detect_pen)
-            for qr_message, qr_data in self.latest_qr_detection_data.items():
-                for vert in qr_data['bounds']:
-                    painter.drawPoint(int(offset_x + vert[0]), int(offset_y + vert[1]))
-            painter.end()
-            self._qr_detection_overlay = qr_detection_overlay
-
-            # projector update
-            if self._camera_to_game_matrix is not None:
-                projector_qr_game_data = {}
-                for qr_message, qr_data in latest_data.items():
-                    p3d = np.float32([qr_data['pos'][0] + offset_x, qr_data['pos'][1] + offset_y, 1])
-                    warped_p3d = self._camera_to_game_matrix.dot(p3d)
-                    p2d = warped_p3d[:2] / p3d[2]
-                    projector_qr_game_data[qr_message] = {'pos': (int(p2d[0] + 0.5), int(p2d[1] + 0.5))}
-
-                self.update_projector_game_overlay.emit(projector_qr_game_data)
-
-        else:
-            self.latest_qr_detection_data = latest_data
-
-
-    @QtCore.pyqtSlot(int)
-    def update_table_dimensions(self, _=0):
-        """Update the table dimensions."""
-        if self._disable_table_change:
-            return
-
-        # self._table.set_dimensions(
-        #     self.ui.spin_table_w.value(),
-        #     self.ui.spin_table_h.value(),
-        # )
-
-        self._overlay_need_update = True
-
+    @QtCore.pyqtSlot()
     def table_save(self):
         """Save the table to file."""
-        filepath = self._table.get_save_filepath()
+        filepath = self.core.game_table.get_save_filepath()
         if os.path.exists(filepath):
             answer = common.message_box(
                 title="Question",
@@ -927,15 +789,27 @@ class MainDialog(QtWidgets.QDialog):
             )
             if answer != "Yes":
                 return
-        self._table.save(filepath)
+        self.core.game_table.save(filepath)
+        print(f"Table successfully saved here: '{filepath}'.")
 
     def fill_table_settings(self):
         """Sync the table settings with the current table."""
-        self._disable_table_change = True
-        self.ui.edit_table_name.setText(self._table.name)
-        width, height = self._table.get_dimensions()
-        self._disable_table_change = False
+        self.core.game_table.disable_slots = True
 
+        table_data = self.core.game_table.get_data()
+        self.ui.edit_table_name.setText(table_data['name'])
+        self.ui.double_table_w.setValue(table_data['width'])
+        self.ui.double_table_h.setValue(table_data['height'])
+        self.ui.spin_table_resolution_factor.setValue(table_data['resolution_factor'])
+        for corner_index in constants.TABLE_CORNERS_DRAWING_ORDER:
+            self._table_corners_widgets_dict['camera'][corner_index][0].setValue(table_data['in_camera_corners'][corner_index][0])
+            self._table_corners_widgets_dict['camera'][corner_index][1].setValue(table_data['in_camera_corners'][corner_index][1])
+            self._table_corners_widgets_dict['projector'][corner_index][0].setValue(table_data['in_projector_corners'][corner_index][0])
+            self._table_corners_widgets_dict['projector'][corner_index][1].setValue(table_data['in_projector_corners'][corner_index][1])
+
+        self.core.game_table.disable_slots = False
+
+    @QtCore.pyqtSlot()
     def table_load(self):
         """Load a table from file."""
         filepath_list = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file', common.get_saved_subdir("table"))
@@ -943,18 +817,54 @@ class MainDialog(QtWidgets.QDialog):
         if not filepath_list or not filepath_list[0]:
             return
 
-        with open(filepath_list[0], 'r') as fid:
-            table_data = json.loads(fid.read())
-
-        self._table.load(table_data)
+        self.core.game_table.load(filepath_list[0])
         self.fill_table_settings()
-        self._overlay_need_update = True
+        self.set_enabled_for_calibrations()
 
-    @QtCore.pyqtSlot(str)
-    def set_table_name(self, name):
-        """Set the table name.
+    @QtCore.pyqtSlot(bool, float, float)
+    def update_table_camera_corners(self, is_press, norm_pos_x, norm_pos_y):
+        """Update table corners values.
 
-        :param name: New name for the table.
-        :type name: str
+        :param is_press: Whether this is a press event instead of a drag.
+        :type is_press: bool
         """
-        self._table.name = name
+        current_camera = self.core.camera_manager.get_camera()
+        if current_camera is None or not current_camera.is_calibrated() or self.core.game_table.is_calibrated():
+            return
+
+        width = self.latest_image.width()
+        height = self.latest_image.height()
+
+        if is_press:
+            corner_points_list = self.core.game_table.get_in_camera_corners_as_points()
+            pos_mouse = QtCore.QPoint(int(norm_pos_x * width), int(norm_pos_y * height))
+
+            self._selected_corner_index = None
+            closest_corner_index = None
+            closest_distance = None
+
+            for corner_index in constants.TABLE_CORNERS_DRAWING_ORDER:
+                test_pos = corner_points_list[corner_index] - pos_mouse
+                test_distance = test_pos.manhattanLength()
+                if (
+                    test_distance < constants.MAXIMUM_CLOSEST_TABLE_CORNERS_DISTANCE and
+                    (
+                        closest_distance is None or
+                        test_distance < closest_distance
+                    )
+                ):
+                    closest_corner_index = corner_index
+                    closest_distance = test_distance
+
+            if closest_corner_index is not None:
+                self._selected_corner_index = closest_corner_index
+                self._selected_corner_offset = corner_points_list[closest_corner_index] - pos_mouse
+
+        elif self._selected_corner_index is not None:
+            pos_x = min(max(0, int(norm_pos_x * width) + self._selected_corner_offset.x()), width - 1)
+            pos_y = min(max(0, int(norm_pos_y * height) + self._selected_corner_offset.y()), height - 1)
+
+            self._table_corners_widgets_dict['camera'][self._selected_corner_index][0].setValue(pos_x)
+            self._table_corners_widgets_dict['camera'][self._selected_corner_index][1].setValue(pos_y)
+
+            self.core.game_table.set_camera_corners_overlay_needs_update()
