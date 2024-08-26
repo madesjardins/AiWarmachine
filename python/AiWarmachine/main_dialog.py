@@ -142,6 +142,9 @@ class MainDialog(QtWidgets.QDialog):
         self.core.refresh_ticker.timeout.connect(self.tick)
         self.ui.spin_viewport_refresh_rate.valueChanged.connect(self.core.set_refresh_ticker_rate)
         self.ui.double_safe_image_grab_coefficient.valueChanged.connect(self.core.set_safe_image_grab_coefficient)
+        self.ui.spin_qr_detection_rate.valueChanged.connect(self.core.set_qr_detection_ticker_rate)
+
+        self.ui.push_reset_qr_detections.clicked.connect(self.core.qr_detector.reset)
 
     def launch_projector_dialog(self):
         """Pop the projector dialog, connect ticker and start."""

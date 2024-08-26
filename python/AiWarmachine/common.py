@@ -17,7 +17,6 @@
 """common functions."""
 
 import os
-import math
 import json
 
 from PyQt6 import QtWidgets, QtGui
@@ -291,56 +290,6 @@ def get_color_from_name(color_name, alpha=255):
         return QtGui.QColor(186, 216, 10, alpha)
 
     raise ValueError(f"Color '{color_name}' is unknown.")
-
-
-def get_transform_matrix(tx, ty, tz, rx, ry, rz):
-    """Convert translation and euler rotation to transform matrix.
-
-    :param tx: Translation X.
-    :type tx: float
-
-    :param ty: Translation Y.
-    :type ty: float
-
-    :param tz: Translation Z.
-    :type tz: float
-
-    :param rx: Rotation X.
-    :type rx: float
-
-    :param ry: Rotation Y.
-    :type ry: float
-
-    :param rz: Rotation X.
-    :type rz: float
-
-    :return: 4x4 transform matrix.
-    :rtype: :class:`ndarray`
-    """
-    matrix = np.identity(4)
-
-    ch = math.cos(math.radians(ry))
-    sh = math.sin(math.radians(ry))
-    ca = math.cos(math.radians(rz))
-    sa = math.sin(math.radians(rz))
-    cb = math.cos(math.radians(rx))
-    sb = math.sin(math.radians(rx))
-
-    matrix[0][0] = ch * ca
-    matrix[0][1] = sh * sb - ch * sa * cb
-    matrix[0][2] = ch * sa * sb + sh * cb
-    matrix[1][0] = sa
-    matrix[1][1] = ca * cb
-    matrix[1][2] = -ca * sb
-    matrix[2][0] = -sh * ca
-    matrix[2][1] = sh * sa * cb + ch * sb
-    matrix[2][2] = -sh * sa * sb + ch * cb
-
-    matrix[0][3] = tx
-    matrix[1][3] = ty
-    matrix[2][3] = tz
-
-    return matrix
 
 
 def composite_images(

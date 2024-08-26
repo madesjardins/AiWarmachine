@@ -16,57 +16,65 @@
 #
 """QR detection object."""
 
-import traceback
 import copy
 import time
 
 import pyboof as pb
 import numpy as np
-from PyQt6 import QtCore, QtGui
+from PyQt6 import QtCore
 
-from . import common
+from . import constants
 
 
-class QRDetector(QtCore.QThread):
+class QRDetector(QtCore.QObject):
     """Qr detector class to detect micro QR codes in image."""
 
-    latest_data_ready = QtCore.pyqtSignal(dict, int, int, int, int)
+    new_qr_detections_data = QtCore.pyqtSignal(dict)
 
     def __init__(self, core):
         """Initializer."""
         super().__init__()
         self.core = core
         self._detector = pb.FactoryFiducial(np.uint8).microqr()
-        self._image_boof = None
-        self._latest_data = {}
-        self._image_np = None
-        self._running = False
-        self._overlay_image = self._get_empty_overlay(10, 10)
-        self._is_processing = False
-
-    def reset(self):
-        """Reset the latest data."""
-        self._latest_data = {}
-        self._image_np = None
+        self._detections_data = {}
 
     @QtCore.pyqtSlot()
-    def tick(self):
-        """Get the latest frame and to a detection on it."""
+    def reset(self):
+        """Reset the latest data."""
+        self._detections_data = {}
+        self.new_qr_detections_data.emit(copy.deepcopy(self._detections_data))
 
-    @property
-    def data(self):
-        """Get the detection data as """
-        return copy.deepcopy(self._latest_data)
+    def update_detections_data(self, detections_data, epsilon=constants.QR_CENTER_EPISLON):
+        """Update previous detection data with new detections and emit new_detections_data signal with copy of data.
 
-    def is_running(self):
-        """Whether or not the detector is running."""
-        return self._running
+        :param detections_data: New detections data.
+        :type detections_data: dict
+
+        :param epsilon: If center to center distance is less than this epsilon, do not consider as new detection. (constants.QR_CENTER_EPISLON)
+        :type epsilon: float
+        """
+        has_changes = False
+        for qr_message, data in detections_data.items():
+            if qr_message not in self._detections_data:
+                has_changes = True
+                self._detections_data[qr_message] = data
+            else:
+                previous_x, previous_y = self._detections_data[qr_message]['pos']
+                new_x, new_y = data['pos']
+                if abs(previous_x - new_x) + abs(previous_y - new_y) > epsilon:
+                    has_changes = True
+                    self._detections_data[qr_message] = data
+        if has_changes:
+            self.new_qr_detections_data.emit(copy.deepcopy(self._detections_data))
 
     def detect(self, np_image):
         """Detect Micro QR codes in image.
 
         :param np_image: Single band contiguous 3D array.
         :type np_image: :class:`NDArray`
+
+        :return: Game coordinates detections.
+        :rtype: dict
         """
         image = pb.ndarray_to_boof(np_image)
         self._detector.detect(image)
@@ -79,70 +87,33 @@ class QRDetector(QtCore.QThread):
                 sum_x += vertex.x
                 sum_y += vertex.y
                 vertices_pos_list.append((vertex.x, vertex.y))
+            center_game_pos = self.core.game_table.warp_camera_position_to_game((sum_x / num_vertices, sum_y / num_vertices), rounded=True)
             detections[qr.message] = {
-                'bounds': vertices_pos_list,
-                'pos': (sum_x / num_vertices, sum_y / num_vertices),
+                'pos': center_game_pos,
                 'time': time.time()
             }
         return detections
 
-    @QtCore.pyqtSlot(object, int, int, int, int)
-    def set_image(self, image_np, min_x, min_y, max_x, max_y):
-        """"""
-        self._image_offset_x = min_x
-        self._image_offset_y = min_y
-        self._image_width = image_np.shape[1]
-        self._image_height = image_np.shape[0]
-        self._image_np = image_np[min_y:max_y, min_x:max_x]
+    @QtCore.pyqtSlot()
+    def tick(self):
+        """Get the latest frame and to a detection on it."""
+        if not self.core.game_table.is_calibrated():
+            return
 
-    def _get_empty_overlay(self, width, height):
-        """"""
-        image_size = QtCore.QSize(width, height)
-        image_overlay = QtGui.QImage(image_size, QtGui.QImage.Format.Format_ARGB32_Premultiplied)
-        painter = QtGui.QPainter(image_overlay)
-        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
-        painter.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
-        painter.fillRect(image_overlay.rect(), QtCore.Qt.GlobalColor.transparent)
-        painter.end()
-        return image_overlay
+        roi = self.core.game_table.get_camera_roi()
 
-    def get_image_overlay(self):
-        """"""
-        return self._overlay_image
+        np_image, _ = self.core.get_image(simply_latest_np_image=True)
+        if np_image is None:
+            return
 
-    def stop(self):
-        """"""
-        self._running = False
+        detections = self.detect(
+            np.copy(
+                np_image[
+                    roi[constants.ROI_MIN_Y]:roi[constants.ROI_MAX_Y] + 1,
+                    roi[constants.ROI_MIN_X]:roi[constants.ROI_MAX_X] + 1,
+                    1
+                ]
+            )
+        )
 
-    def run(self):
-        """"""
-        self._running = True
-        while self._running:
-            if self._image_np is not None:
-                # overlay_offset_x = self._image_offset_x
-                # overlay_offset_y = self._image_offset_y
-                # overlay_width = self._image_width
-                # overlay_height = self._image_height
-                # overlay_image = self._get_empty_overlay(overlay_width, overlay_height)
-                try:
-                    detections = self.detect(np.copy(self._image_np))
-                    self._latest_data.update(detections)
-                    self.latest_data_ready.emit(self.data, self._image_offset_x, self._image_offset_y, self._image_width, self._image_height)
-                    # if self._latest_data:
-                    #     painter = QtGui.QPainter(overlay_image)
-                    #     detect_brush = QtGui.QBrush()
-                    #     painter.setBrush(detect_brush)
-                    #     detect_pen = QtGui.QPen(QtCore.Qt.GlobalColor.red, 4, QtCore.Qt.PenStyle.SolidLine)
-                    #     painter.setPen(detect_pen)
-                    #     for qr_message, qr_data in self._latest_data.items():
-                    #         for vert in qr_data['bounds']:
-                    #             painter.drawEllipse(int(overlay_offset_x + vert[0]), int(overlay_offset_y + vert[1]), 5, 5)
-                    #             break
-                    #     painter.end()
-                except Exception:
-                    traceback.print_exc()
-                    self._running = False
-                # finally:
-                #     self._overlay_image = overlay_image
-
-            # QtCore.QCoreApplication.processEvents()
+        self.update_detections_data(detections)

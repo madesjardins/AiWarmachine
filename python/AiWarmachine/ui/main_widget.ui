@@ -1416,6 +1416,9 @@
                    <height>16777215</height>
                   </size>
                  </property>
+                 <property name="focusPolicy">
+                  <enum>Qt::NoFocus</enum>
+                 </property>
                  <property name="value">
                   <number>18</number>
                  </property>
@@ -1440,6 +1443,9 @@
                    <width>16777215</width>
                    <height>16777215</height>
                   </size>
+                 </property>
+                 <property name="focusPolicy">
+                  <enum>Qt::NoFocus</enum>
                  </property>
                  <property name="value">
                   <number>23</number>
@@ -1578,13 +1584,6 @@
              </item>
              <item>
               <layout class="QGridLayout" name="grid_table_calibration_settings">
-               <item row="0" column="0">
-                <widget class="QLabel" name="label_table_name">
-                 <property name="text">
-                  <string>Name:</string>
-                 </property>
-                </widget>
-               </item>
                <item row="0" column="1">
                 <widget class="QLineEdit" name="edit_table_name">
                  <property name="enabled">
@@ -1609,7 +1608,7 @@
                   </size>
                  </property>
                  <property name="focusPolicy">
-                  <enum>Qt::StrongFocus</enum>
+                  <enum>Qt::NoFocus</enum>
                  </property>
                  <property name="text">
                   <string>Latest</string>
@@ -1638,6 +1637,13 @@
                  </property>
                 </widget>
                </item>
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_table_name">
+                 <property name="text">
+                  <string>Name:</string>
+                 </property>
+                </widget>
+               </item>
                <item row="1" column="1">
                 <layout class="QHBoxLayout" name="hbox_table_dimensions">
                  <item>
@@ -1653,6 +1659,9 @@
                      <width>64</width>
                      <height>16777215</height>
                     </size>
+                   </property>
+                   <property name="focusPolicy">
+                    <enum>Qt::NoFocus</enum>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -1710,6 +1719,9 @@
                      <height>16777215</height>
                     </size>
                    </property>
+                   <property name="focusPolicy">
+                    <enum>Qt::NoFocus</enum>
+                   </property>
                    <property name="alignment">
                     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                    </property>
@@ -1738,12 +1750,41 @@
                  </item>
                 </layout>
                </item>
+               <item row="2" column="0">
+                <widget class="QLabel" name="label_table_resolution_factor">
+                 <property name="text">
+                  <string>Resolution Factor:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QSpinBox" name="spin_table_resolution_factor">
+                 <property name="focusPolicy">
+                  <enum>Qt::NoFocus</enum>
+                 </property>
+                 <property name="suffix">
+                  <string>mm/px</string>
+                 </property>
+                 <property name="minimum">
+                  <number>1</number>
+                 </property>
+                 <property name="maximum">
+                  <number>4</number>
+                 </property>
+                 <property name="value">
+                  <number>2</number>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </item>
              <item>
               <layout class="QHBoxLayout" name="hbox_table_calibration">
                <item>
                 <widget class="QPushButton" name="push_table_calibrate">
+                 <property name="focusPolicy">
+                  <enum>Qt::NoFocus</enum>
+                 </property>
                  <property name="text">
                   <string>Calibrate</string>
                  </property>
@@ -1751,6 +1792,9 @@
                </item>
                <item>
                 <widget class="QPushButton" name="push_table_uncalibrate">
+                 <property name="focusPolicy">
+                  <enum>Qt::NoFocus</enum>
+                 </property>
                  <property name="text">
                   <string>Uncalibrate</string>
                  </property>
@@ -2733,46 +2777,7 @@
            <string>Advanced</string>
           </attribute>
           <layout class="QGridLayout" name="gridLayout_3">
-           <item row="3" column="0">
-            <widget class="QLabel" name="label_table_resolution_factor">
-             <property name="text">
-              <string>Game Table Resolution Factor</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="1">
-            <widget class="QSpinBox" name="spin_table_resolution_factor">
-             <property name="suffix">
-              <string>mm/px</string>
-             </property>
-             <property name="minimum">
-              <number>1</number>
-             </property>
-             <property name="maximum">
-              <number>4</number>
-             </property>
-             <property name="value">
-              <number>2</number>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QSpinBox" name="spin_viewport_refresh_rate">
-             <property name="suffix">
-              <string>fps</string>
-             </property>
-             <property name="minimum">
-              <number>1</number>
-             </property>
-             <property name="maximum">
-              <number>120</number>
-             </property>
-             <property name="value">
-              <number>30</number>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="0">
+           <item row="6" column="0">
             <spacer name="vspacer_advanced">
              <property name="orientation">
               <enum>Qt::Vertical</enum>
@@ -2788,10 +2793,42 @@
              </property>
             </spacer>
            </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_viewport_refresh_rate">
+           <item row="0" column="1">
+            <widget class="QSpinBox" name="spin_viewport_refresh_rate">
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="suffix">
+              <string>fps</string>
+             </property>
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>120</number>
+             </property>
+             <property name="value">
+              <number>30</number>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_safe_image_grab_coefficient">
              <property name="text">
-              <string>Viewport Refresh Rate Target</string>
+              <string>Viewport Safe Image Grab Coefficient</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QDoubleSpinBox" name="double_safe_image_grab_coefficient">
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="singleStep">
+              <double>0.250000000000000</double>
+             </property>
+             <property name="value">
+              <double>1.000000000000000</double>
              </property>
             </widget>
            </item>
@@ -2808,23 +2845,6 @@
              </property>
             </spacer>
            </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_safe_image_grab_coefficient">
-             <property name="text">
-              <string>Viewport Safe Image Grab Coefficient</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QDoubleSpinBox" name="double_safe_image_grab_coefficient">
-             <property name="singleStep">
-              <double>0.250000000000000</double>
-             </property>
-             <property name="value">
-              <double>1.000000000000000</double>
-             </property>
-            </widget>
-           </item>
            <item row="4" column="0">
             <widget class="QLabel" name="label_qr_detection_rate">
              <property name="text">
@@ -2832,8 +2852,18 @@
              </property>
             </widget>
            </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_viewport_refresh_rate">
+             <property name="text">
+              <string>Viewport Refresh Rate Target</string>
+             </property>
+            </widget>
+           </item>
            <item row="4" column="1">
             <widget class="QSpinBox" name="spin_qr_detection_rate">
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
              <property name="suffix">
               <string>fps</string>
              </property>
@@ -2848,15 +2878,11 @@
              </property>
             </widget>
            </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_projector_refresh_rate">
-             <property name="text">
-              <string>Projector Refresh Rate Target</string>
-             </property>
-            </widget>
-           </item>
            <item row="2" column="1">
             <widget class="QSpinBox" name="spin_projector_refresh_rate">
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
              <property name="suffix">
               <string>fps</string>
              </property>
@@ -2868,6 +2894,30 @@
              </property>
              <property name="value">
               <number>15</number>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_projector_refresh_rate">
+             <property name="text">
+              <string>Projector Refresh Rate Target</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="label_reset_qr_detections">
+             <property name="text">
+              <string>Reset Detections Data</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <widget class="QPushButton" name="push_reset_qr_detections">
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="text">
+              <string>Reset</string>
              </property>
             </widget>
            </item>
@@ -2901,7 +2951,7 @@
             <x>0</x>
             <y>0</y>
             <width>897</width>
-            <height>451</height>
+            <height>450</height>
            </rect>
           </property>
           <property name="sizePolicy">
@@ -2964,6 +3014,9 @@
              <width>160</width>
              <height>16777215</height>
             </size>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -3050,10 +3103,12 @@
   <tabstop>slider_camera_gain</tabstop>
   <tabstop>slider_camera_saturation</tabstop>
   <tabstop>slider_camera_sharpness</tabstop>
-  <tabstop>spin_number_of_squares_w</tabstop>
-  <tabstop>spin_number_of_squares_h</tabstop>
+  <tabstop>edit_snapshot_folder_name</tabstop>
+  <tabstop>edit_snapshot_name</tabstop>
+  <tabstop>tab_widget_calibration</tabstop>
   <tabstop>scroll_viewport</tabstop>
   <tabstop>edit_viewport_resolution</tabstop>
+  <tabstop>edit_table_name</tabstop>
  </tabstops>
  <resources/>
  <connections/>

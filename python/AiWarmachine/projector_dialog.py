@@ -17,11 +17,10 @@
 """Projector dialog."""
 
 from functools import partial
-# import copy
 
 from PyQt6 import QtCore, QtWidgets, QtGui
-# import numpy as np
-# import cv2 as cv
+import numpy as np
+import cv2 as cv
 
 from . import viewport_label, constants, common
 
@@ -46,7 +45,11 @@ class ProjectorDialog(QtWidgets.QDialog):
         self._selected_corner_offset = QtCore.QPoint(0, 0)
         self._corners_are_visible = False
         self._borders_in_bold = False
-        self.frame_num = 0
+
+        self._detection_overlay_needs_update = True
+        self._game_qr_detection_data = None
+        self._qr_detection_overlay = None
+
         self._init_ui()
         self._init_connections()
         self.show()
@@ -72,6 +75,9 @@ class ProjectorDialog(QtWidgets.QDialog):
         self.viewport_label.key_press_event.connect(self.key_pressed)
         self.viewport_label.mouse_press_event.connect(partial(self.update_corners, True))
         self.viewport_label.mouse_drag_event.connect(partial(self.update_corners, False))
+
+        # TODO: This should be moved to a different class
+        self.core.qr_detector.new_qr_detections_data.connect(self.update_detection_overlay)
 
     @QtCore.pyqtSlot(str)
     def key_pressed(self, key_text):
@@ -172,6 +178,20 @@ class ProjectorDialog(QtWidgets.QDialog):
             if corners_overlay is not None:
                 image = common.composite_images(self._base_image, corners_overlay, corners_overlay_roi[constants.ROI_MIN_X], corners_overlay_roi[constants.ROI_MIN_Y])
 
+        if self._detection_overlay_needs_update and self._game_qr_detection_data is not None:
+            self._qr_detection_overlay = self.create_game_qr_detection_overlay()
+
+        if self._qr_detection_overlay is not None:
+            roi = self.core.game_table.get_projector_roi()
+            if roi is not None:
+                image = common.composite_images(
+                    image,
+                    self._qr_detection_overlay,
+                    roi[constants.ROI_MIN_X],
+                    roi[constants.ROI_MIN_Y],
+                    composite_mode=QtGui.QPainter.CompositionMode.CompositionMode_Plus
+                )
+
         self.set_image(image)
 
     @QtCore.pyqtSlot(QtGui.QImage)
@@ -183,29 +203,45 @@ class ProjectorDialog(QtWidgets.QDialog):
         """
         self.viewport_label.setPixmap(QtGui.QPixmap.fromImage(image))
 
-    # TODO
-    # @QtCore.pyqtSlot(dict)
-    # def update_game_overlay(self, game_qr_detection_data):
-    #     """"""
-    #     self._latest_game_qr_detection_data = copy.deepcopy(game_qr_detection_data)
-    #     if self._base_image is not None and self._game_to_projector_matrix is not None:
-    #         image = np.zeros(
-    #             (
-    #                 1280,  # Should be based on 1px = 1mm
-    #                 720,
-    #                 3
-    #             ),
-    #             dtype=np.uint8
-    #         )
-    #         image[:, :] = (0, 0, 0)
-    #         for message, qr_data in game_qr_detection_data.items():
-    #             cv.circle(image, qr_data['pos'], 18, (255, 255, 255), 3)
+    # TODO: These should be moved to a different class
+    @QtCore.pyqtSlot(dict)
+    def update_detection_overlay(self, game_qr_detection_data):
+        """Notify of new qr detection data and prepare to create new overlay."""
+        self._game_qr_detection_data = game_qr_detection_data
+        self._detection_overlay_needs_update = True
 
-    #         warped_image = cv.warpPerspective(image, self._game_to_projector_matrix, (self._base_image.width(), self._base_image.height()))
-    #         self._game_overlay = QtGui.QImage(
-    #             warped_image,
-    #             warped_image.shape[1],
-    #             warped_image.shape[0],
-    #             warped_image.strides[0],
-    #             QtGui.QImage.Format.Format_BGR888
-    #         )
+    def create_game_qr_detection_overlay(self):
+        """Create game overlay to composite in plus mode.
+
+        :return: QR Detection overlay.
+        :rtype: :class:`QImage`
+        """
+        width, height = self.core.game_table.get_effective_table_image_size()
+        image = np.zeros(
+            (
+                height,
+                width,
+                3
+            ),
+            dtype=np.uint8
+        )
+        small_base_radius = self.core.game_table.convert_mm_to_pixel(15 + 3, rounded=True)
+        thickness = self.core.game_table.convert_mm_to_pixel(2, ceiled=True)
+
+        for qr_data in self._game_qr_detection_data.values():
+            cv.circle(
+                image,
+                qr_data['pos'],
+                small_base_radius,
+                (255, 255, 255),
+                thickness
+            )
+
+        warped_image = self.core.game_table.warp_game_to_projector_image(image)
+        return QtGui.QImage(
+            warped_image,
+            warped_image.shape[1],
+            warped_image.shape[0],
+            warped_image.strides[0],
+            QtGui.QImage.Format.Format_BGR888
+        )

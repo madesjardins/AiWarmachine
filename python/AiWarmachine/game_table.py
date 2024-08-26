@@ -21,6 +21,8 @@ we assume the
 
 import re
 import json
+import copy
+import math
 
 import cv2 as cv
 import numpy as np
@@ -248,18 +250,30 @@ class GameTable(QtCore.QObject):
         self._corners_overlay_needs_update = [True, True]
         self._corners_overlay = [None, None]
 
+    def get_effective_table_image_size(self):
+        """Get the effective table size in pixels using the resolution factor.
+
+        :return: Width and height.
+        :rtype: tuple(int, int)
+        """
+        width = self.convert_mm_to_pixel(self._width, ceiled=True)
+        height = self.convert_mm_to_pixel(self._height, ceiled=True)
+        return width, height
+
     def get_reference_corner_2d_points(self):
         """Get the 4 corners 2d reference positions.
 
         :return: Array of 4 2d points (BL, TL, TR, BR).
         :rtype: :class:`np.ndarray`
         """
+        width = self.convert_mm_to_pixel(self._width)
+        height = self.convert_mm_to_pixel(self._height)
         return np.float32(
             [
                 [0.0, 0.0],
-                [0.0, self._height],
-                [self._width, self._height],
-                [self._width, 0.0]
+                [0.0, height],
+                [width, height],
+                [width, 0.0]
             ]
         )
 
@@ -274,8 +288,20 @@ class GameTable(QtCore.QObject):
 
         game_points = self.get_reference_corner_2d_points()
 
-        camera_points = np.float32(self._corners_list[constants.TABLE_CORNERS_TYPE_CAMERA])
-        projector_points = np.float32(self._corners_list[constants.TABLE_CORNERS_TYPE_PROJECTOR])
+        camera_points = np.float32([
+            [
+                _p[0] - self._roi[constants.TABLE_CORNERS_TYPE_CAMERA][constants.ROI_MIN_X],
+                _p[1] - self._roi[constants.TABLE_CORNERS_TYPE_CAMERA][constants.ROI_MIN_Y]
+            ]
+            for _p in self._corners_list[constants.TABLE_CORNERS_TYPE_CAMERA]
+        ])
+        projector_points = np.float32([
+            [
+                _p[0] - self._roi[constants.TABLE_CORNERS_TYPE_PROJECTOR][constants.ROI_MIN_X],
+                _p[1] - self._roi[constants.TABLE_CORNERS_TYPE_PROJECTOR][constants.ROI_MIN_Y]
+            ]
+            for _p in self._corners_list[constants.TABLE_CORNERS_TYPE_PROJECTOR]
+        ])
 
         self._camera_to_game_matrix = cv.getPerspectiveTransform(camera_points, game_points)
         self._game_to_projector_matrix = cv.getPerspectiveTransform(game_points, projector_points)
@@ -376,6 +402,36 @@ class GameTable(QtCore.QObject):
             qpoints_list.append(QtCore.QPoint(posx, posy))
         return qpoints_list
 
+    def convert_mm_to_pixel(self, value, rounded=False, ceiled=False, floored=False):
+        """Convert a length in mm to pixel.
+
+            .. note:: Only one of the arguments rounded, ceiled or floored will be used in that priority order.
+
+        :param value: The value in mm to convert to pixel.
+        :type value: float
+
+        :param rounded: Whether or not to return the integer rounded value or not. (True)
+        :type rounded: bool
+
+        :param ceiled: Whether or not to return the integer ceiling of the value or not. (False)
+        :type ceiled: bool
+
+        :param floored: Whether or not to return the integer floor of the value or not. (False)
+        :type floored: bool
+
+        :return: The value in pixels.
+        :rtype: float
+        """
+        converted_value = value * self._resolution_factor
+        if rounded:
+            return round(converted_value)
+        elif ceiled:
+            return math.ceil(converted_value)
+        elif floored:
+            return math.floor(converted_value)
+        else:
+            return converted_value
+
     # ######################
     #
     # CAMERA
@@ -406,6 +462,39 @@ class GameTable(QtCore.QObject):
         """Set the flag to redraw the camera overlay."""
         self._corners_overlay_needs_update[constants.TABLE_CORNERS_TYPE_CAMERA] = True
 
+    def get_camera_roi(self):
+        """Get the camera ROI.
+
+        :return: ROI values [min_x, min_y, max_x, max_y].
+        :rtype: list[int]
+        """
+        camera_roi = self._roi[constants.TABLE_CORNERS_TYPE_CAMERA]
+        if not self.is_calibrated() or camera_roi is None:
+            return None
+
+        return copy.deepcopy(camera_roi)
+
+    def warp_camera_position_to_game(self, pos, rounded=False):
+        """Warp a 2D in camera roi position to game position.
+
+        :param pos: The (x, y) position.
+        :type pos: tuple[float]
+
+        :param rounded: Whether or not to round the result and return integers. (False)
+        :type rounded: bool
+
+        :return: Warped position.
+        :rtype: tuple[float]
+        """
+        pos_homo = np.float32([pos[0], pos[1], 1.0])
+        warp_pos_homo = self._camera_to_game_matrix.dot(pos_homo)
+        warp_pos = (warp_pos_homo / warp_pos_homo[2])[:2]
+        if rounded:
+            return (round(warp_pos[0]), round(warp_pos[1]))
+        else:
+            return warp_pos
+        return
+
     # ######################
     #
     # PROJECTOR
@@ -435,3 +524,29 @@ class GameTable(QtCore.QObject):
     def set_projector_corners_overlay_needs_update(self):
         """Set the flag to redraw the projector overlay."""
         self._corners_overlay_needs_update[constants.TABLE_CORNERS_TYPE_PROJECTOR] = True
+
+    def get_projector_roi(self):
+        """Get the projector ROI.
+
+        :return: ROI values [min_x, min_y, max_x, max_y].
+        :rtype: list[int]
+        """
+        projector_roi = self._roi[constants.TABLE_CORNERS_TYPE_PROJECTOR]
+        if not self.is_calibrated() or projector_roi is None:
+            return None
+
+        return copy.deepcopy(projector_roi)
+
+    def warp_game_to_projector_image(self, image):
+        """Warp an image using the game -> projector perspective transform.
+
+        :param image: Numpy image.
+        :type: :class:`NDArray`
+
+        :return: Warped image.
+        :rtype: :class:`NDArray`
+        """
+        projector_roi = self._roi[constants.TABLE_CORNERS_TYPE_PROJECTOR]
+        width = projector_roi[constants.ROI_MAX_X] - projector_roi[constants.ROI_MIN_X] + 1
+        height = projector_roi[constants.ROI_MAX_Y] - projector_roi[constants.ROI_MIN_Y] + 1
+        return cv.warpPerspective(image, self._game_to_projector_matrix, (width, height))

@@ -61,6 +61,7 @@ class MainCore(QtCore.QObject):
 
         self.projector_ticker = QtCore.QTimer()
         self.projector_ticker.setInterval(int(self._pfps_interval * 1000))
+        self.projector_ticker.timeout.connect(self.qr_detector.tick)
 
     @QtCore.pyqtSlot(int)
     def set_refresh_ticker_rate(self, tps):
@@ -143,7 +144,7 @@ class MainCore(QtCore.QObject):
             return None, None
 
         if simply_latest_np_image:
-            if current_camera.is_calibrated() and self.simply_latest_np_image is not None:
+            if current_camera.is_calibrated() and self.latest_np_image is not None:
                 return self.latest_np_image, None
             else:
                 return None, None
