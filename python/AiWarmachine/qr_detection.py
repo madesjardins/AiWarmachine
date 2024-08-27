@@ -29,43 +29,43 @@ from . import constants
 class QRDetector(QtCore.QObject):
     """Qr detector class to detect micro QR codes in image."""
 
-    new_qr_detections_data = QtCore.pyqtSignal(dict)
+    new_qr_detection_data = QtCore.pyqtSignal(dict)
 
     def __init__(self, core):
         """Initializer."""
         super().__init__()
         self.core = core
         self._detector = pb.FactoryFiducial(np.uint8).microqr()
-        self._detections_data = {}
+        self._detection_data = {}
 
     @QtCore.pyqtSlot()
     def reset(self):
         """Reset the latest data."""
-        self._detections_data = {}
-        self.new_qr_detections_data.emit(copy.deepcopy(self._detections_data))
+        self._detection_data = {}
+        self.new_qr_detection_data.emit(copy.deepcopy(self._detection_data))
 
-    def update_detections_data(self, detections_data, epsilon=constants.QR_CENTER_EPISLON):
-        """Update previous detection data with new detections and emit new_detections_data signal with copy of data.
+    def update_detection_data(self, detection_data, epsilon=constants.QR_CENTER_EPISLON):
+        """Update previous detection data with new detections and emit new_qr_detection_data signal with copy of data.
 
-        :param detections_data: New detections data.
-        :type detections_data: dict
+        :param detection_data: New detection data.
+        :type detection_data: dict
 
         :param epsilon: If center to center distance is less than this epsilon, do not consider as new detection. (constants.QR_CENTER_EPISLON)
         :type epsilon: float
         """
         has_changes = False
-        for qr_message, data in detections_data.items():
-            if qr_message not in self._detections_data:
+        for qr_message, data in detection_data.items():
+            if qr_message not in self._detection_data:
                 has_changes = True
-                self._detections_data[qr_message] = data
+                self._detection_data[qr_message] = data
             else:
-                previous_x, previous_y = self._detections_data[qr_message]['pos']
+                previous_x, previous_y = self._detection_data[qr_message]['pos']
                 new_x, new_y = data['pos']
                 if abs(previous_x - new_x) + abs(previous_y - new_y) > epsilon:
                     has_changes = True
-                    self._detections_data[qr_message] = data
+                    self._detection_data[qr_message] = data
         if has_changes:
-            self.new_qr_detections_data.emit(copy.deepcopy(self._detections_data))
+            self.new_qr_detection_data.emit(copy.deepcopy(self._detection_data))
 
     def detect(self, np_image):
         """Detect Micro QR codes in image.
@@ -116,4 +116,23 @@ class QRDetector(QtCore.QObject):
             )
         )
 
-        self.update_detections_data(detections)
+        self.update_detection_data(detections)
+
+    # TODO: This should be moved to a different class as it depends of model base size.
+    def query(self, pos, max_distance=30):
+        """Get the data within a distance of the position.
+
+        :param pos: A game position.
+        :type pos: tuple[int]
+
+        :param max_distance: The maximum manhattan length in pixels. (30)
+        :type max_distance: int
+
+        :return: QR message and position.
+        :rtype: tuple[int, :class:`QPoint`]
+        """
+        for qr_message, qr_data in self._detection_data.items():
+            if abs(pos[0] - qr_data['pos'][0]) + abs(pos[1] - qr_data['pos'][1]) <= max_distance:
+                return qr_message, qr_data['pos']
+
+        return None, None

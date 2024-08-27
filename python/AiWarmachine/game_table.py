@@ -432,6 +432,76 @@ class GameTable(QtCore.QObject):
         else:
             return converted_value
 
+    def convert_pixel_to_mm(self, value):
+        """Convert a length in pixel to mm.
+
+        :param value: The value in mm to convert to pixel.
+        :type value: float
+
+        :return: The value in mm.
+        :rtype: float
+        """
+        return value / self._resolution_factor
+
+    def create_debug_overlay(self, debug_data, is_projector=False):
+        """Create debug overlay for camera or projector to composite in plus mode.
+
+        :param debug_data: The debug data to show.
+        :type debug_data: dict
+
+        :param is_projector: If set to True, will create overlay for projector instead of camera. (False)
+        :type is_projector: bool
+
+        :return: QR Detection overlay.
+        :rtype: :class:`QImage`
+        """
+        if not debug_data or not self.is_calibrated():
+            return None
+
+        width, height = self.get_effective_table_image_size()
+
+        image = np.zeros(
+            (
+                height,
+                width,
+                3
+            ),
+            dtype=np.uint8
+        )
+
+        if test_position_data := debug_data.get('test_position'):
+
+            thickness = test_position_data['thickness']
+            size = test_position_data['size']
+
+            cv.line(
+                image,
+                (test_position_data['pos'][0] - size, test_position_data['pos'][1]),
+                (test_position_data['pos'][0] + size, test_position_data['pos'][1]),
+                (255, 255, 255),
+                thickness
+            )
+            cv.line(
+                image,
+                (test_position_data['pos'][0], test_position_data['pos'][1] - size),
+                (test_position_data['pos'][0], test_position_data['pos'][1] + size),
+                (255, 255, 255),
+                thickness
+            )
+
+        if is_projector:
+            warped_image = self.warp_game_to_projector_image(image)
+        else:
+            warped_image = self.warp_game_to_camera_image(image)
+
+        return QtGui.QImage(
+            warped_image,
+            warped_image.shape[1],
+            warped_image.shape[0],
+            warped_image.strides[0],
+            QtGui.QImage.Format.Format_BGR888
+        )
+
     # ######################
     #
     # CAMERA
@@ -493,7 +563,41 @@ class GameTable(QtCore.QObject):
             return (round(warp_pos[0]), round(warp_pos[1]))
         else:
             return warp_pos
-        return
+
+    def warp_game_position_to_camera(self, pos, rounded=False):
+        """Warp a 2D in camera roi position to game position.
+
+        :param pos: The (x, y) position.
+        :type pos: tuple[float]
+
+        :param rounded: Whether or not to round the result and return integers. (False)
+        :type rounded: bool
+
+        :return: Warped position.
+        :rtype: tuple[float]
+        """
+
+        pos_homo = np.float32([pos[0], pos[1], 1.0])
+        warp_pos_homo = np.linalg.inv(self._camera_to_game_matrix).dot(pos_homo)
+        warp_pos = (warp_pos_homo / warp_pos_homo[2])[:2]
+        if rounded:
+            return (round(warp_pos[0]), round(warp_pos[1]))
+        else:
+            return warp_pos
+
+    def warp_game_to_camera_image(self, image):
+        """Warp an image using the game -> image perspective transform.
+
+        :param image: Numpy image.
+        :type: :class:`NDArray`
+
+        :return: Warped image.
+        :rtype: :class:`NDArray`
+        """
+        camera_roi = self._roi[constants.TABLE_CORNERS_TYPE_CAMERA]
+        width = camera_roi[constants.ROI_MAX_X] - camera_roi[constants.ROI_MIN_X] + 1
+        height = camera_roi[constants.ROI_MAX_Y] - camera_roi[constants.ROI_MIN_Y] + 1
+        return cv.warpPerspective(image, self._camera_to_game_matrix, (width, height), flags=cv.WARP_INVERSE_MAP)
 
     # ######################
     #

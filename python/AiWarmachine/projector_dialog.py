@@ -50,6 +50,10 @@ class ProjectorDialog(QtWidgets.QDialog):
         self._game_qr_detection_data = None
         self._qr_detection_overlay = None
 
+        self._debug_overlay_needs_update = True
+        self._debug_data = None
+        self._debug_overlay = None
+
         self._init_ui()
         self._init_connections()
         self.show()
@@ -72,16 +76,16 @@ class ProjectorDialog(QtWidgets.QDialog):
 
     def _init_connections(self):
         """Initialize the UI."""
-        self.viewport_label.key_press_event.connect(self.key_pressed)
-        self.viewport_label.mouse_press_event.connect(partial(self.update_corners, True))
-        self.viewport_label.mouse_drag_event.connect(partial(self.update_corners, False))
+        self.viewport_label.key_press_event.connect(self.process_viewport_keyboard_events)
+        self.viewport_label.mouse_press_event.connect(partial(self.process_viewport_mouse_events, True))
+        self.viewport_label.mouse_drag_event.connect(partial(self.process_viewport_mouse_events, False))
 
         # TODO: This should be moved to a different class
-        self.core.qr_detector.new_qr_detections_data.connect(self.update_detection_overlay)
+        self.core.qr_detector.new_qr_detection_data.connect(self.set_qr_detection_data)
 
     @QtCore.pyqtSlot(str)
-    def key_pressed(self, key_text):
-        """A key was pressed.
+    def process_viewport_keyboard_events(self, key_text):
+        """Process key pressed events.
 
         :param key_text: The text value of the key.
         :type key_text: str
@@ -129,8 +133,20 @@ class ProjectorDialog(QtWidgets.QDialog):
             )
 
     @QtCore.pyqtSlot(bool, float, float)
-    def update_corners(self, is_pressed, norm_pos_x, norm_pos_y):
-        """Update corners through mouse move."""
+    def process_viewport_mouse_events(self, is_pressed, norm_pos_x, norm_pos_y):
+        """Process mouse event from the viewport.
+
+        This function deals with table corners values for example.
+
+        :param is_press: Whether this is a press event instead of a drag.
+        :type is_press: bool
+
+        :param norm_pos_x: Position relative to viewport width as [0, 1[.
+        :type norm_pos_x: float
+
+        :param norm_pos_x: Position relative to viewport height as [0, 1[.
+        :type norm_pos_x: float
+        """
         if not self._corners_are_visible:
             return
 
@@ -173,13 +189,16 @@ class ProjectorDialog(QtWidgets.QDialog):
     def tick(self):
         """Refresh viewport."""
         image = self._base_image
+        # Corners
         if self._corners_are_visible:
             corners_overlay, corners_overlay_roi = self.core.game_table.get_projector_corners_overlay(bold=self._borders_in_bold)
             if corners_overlay is not None:
                 image = common.composite_images(self._base_image, corners_overlay, corners_overlay_roi[constants.ROI_MIN_X], corners_overlay_roi[constants.ROI_MIN_Y])
 
+        # QR Detection
         if self._detection_overlay_needs_update and self._game_qr_detection_data is not None:
             self._qr_detection_overlay = self.create_game_qr_detection_overlay()
+            self._detection_overlay_needs_update = False
 
         if self._qr_detection_overlay is not None:
             roi = self.core.game_table.get_projector_roi()
@@ -187,6 +206,25 @@ class ProjectorDialog(QtWidgets.QDialog):
                 image = common.composite_images(
                     image,
                     self._qr_detection_overlay,
+                    roi[constants.ROI_MIN_X],
+                    roi[constants.ROI_MIN_Y],
+                    composite_mode=QtGui.QPainter.CompositionMode.CompositionMode_Plus
+                )
+
+        # Debug
+        if self._debug_overlay_needs_update and self._debug_data is not None:
+            self._debug_overlay = self.core.game_table.create_debug_overlay(
+                debug_data=self._debug_data,
+                is_projector=True
+            )
+            self._debug_overlay_needs_update = False
+
+        if self._debug_overlay is not None:
+            roi = self.core.game_table.get_projector_roi()
+            if roi is not None:
+                image = common.composite_images(
+                    image,
+                    self._debug_overlay,
                     roi[constants.ROI_MIN_X],
                     roi[constants.ROI_MIN_Y],
                     composite_mode=QtGui.QPainter.CompositionMode.CompositionMode_Plus
@@ -203,9 +241,21 @@ class ProjectorDialog(QtWidgets.QDialog):
         """
         self.viewport_label.setPixmap(QtGui.QPixmap.fromImage(image))
 
-    # TODO: These should be moved to a different class
+    # Debug
     @QtCore.pyqtSlot(dict)
-    def update_detection_overlay(self, game_qr_detection_data):
+    def set_debug_data(self, data):
+        """Notify of new debug data.
+
+        :param data: Debug data.
+        :type data: dict
+        """
+        if self.core.game_table.is_calibrated():
+            self._debug_data = data
+            self._debug_overlay_needs_update = True
+
+    # TODO: This should be moved to a different class as it depends of model base size.
+    @QtCore.pyqtSlot(dict)
+    def set_qr_detection_data(self, game_qr_detection_data):
         """Notify of new qr detection data and prepare to create new overlay."""
         self._game_qr_detection_data = game_qr_detection_data
         self._detection_overlay_needs_update = True

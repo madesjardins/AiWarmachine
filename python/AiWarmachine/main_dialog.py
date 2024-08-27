@@ -32,6 +32,8 @@ from . import common, constants, viewport_label, projector_dialog
 class MainDialog(QtWidgets.QDialog):
     """Main dialog."""
 
+    new_debug_data = QtCore.pyqtSignal(dict)
+
     def __init__(self, core, parent=None):
         """Initialize.
 
@@ -49,6 +51,10 @@ class MainDialog(QtWidgets.QDialog):
         self._previous_time = time.time()
         self._selected_corner_index = None
         self._selected_corner_offset = QtCore.QPoint(0, 0)
+
+        self._debug_overlay_needs_update = True
+        self._debug_data = None
+        self._debug_overlay = None
 
         self._init_ui()
         self._init_connections()
@@ -144,7 +150,17 @@ class MainDialog(QtWidgets.QDialog):
         self.ui.double_safe_image_grab_coefficient.valueChanged.connect(self.core.set_safe_image_grab_coefficient)
         self.ui.spin_qr_detection_rate.valueChanged.connect(self.core.set_qr_detection_ticker_rate)
 
-        self.ui.push_reset_qr_detections.clicked.connect(self.core.qr_detector.reset)
+        self.ui.push_reset_qr_detection.clicked.connect(self.core.qr_detector.reset)
+
+        # Debug
+        self.ui.double_debug_test_position_x.valueChanged.connect(self.send_debug_test)
+        self.ui.double_debug_test_position_y.valueChanged.connect(self.send_debug_test)
+        self.ui.spin_debug_test_position_size.valueChanged.connect(self.send_debug_test)
+        self.ui.spin_debug_test_position_thickness.valueChanged.connect(self.send_debug_test)
+        self.ui.check_debug_test_position.stateChanged.connect(self.send_debug_test)
+
+        self.new_debug_data.connect(self.projector_dialog.set_debug_data)
+        self.new_debug_data.connect(self.set_debug_data)
 
     def launch_projector_dialog(self):
         """Pop the projector dialog, connect ticker and start."""
@@ -204,6 +220,23 @@ class MainDialog(QtWidgets.QDialog):
         self.set_enabled_for_calibrated_camera()
         self.set_enabled_for_calibrated_table()
 
+    @QtCore.pyqtSlot()
+    def send_debug_test(self, _=None):
+        """"""
+        data = {}
+        if self.ui.check_debug_test_position.isChecked():
+
+            data['test_position'] = {
+                'pos': (
+                    self.core.game_table.convert_mm_to_pixel(self.ui.double_debug_test_position_x.value(), rounded=True),
+                    self.core.game_table.convert_mm_to_pixel(self.ui.double_debug_test_position_y.value(), rounded=True)
+                ),
+                'size': self.core.game_table.convert_mm_to_pixel(self.ui.spin_debug_test_position_size.value(), ceiled=True),
+                'thickness': self.core.game_table.convert_mm_to_pixel(self.ui.spin_debug_test_position_thickness.value(), ceiled=True),
+            }
+
+        self.new_debug_data.emit(data)
+
     # #############################################
     #
     # REFRESH VIEWPORT
@@ -245,6 +278,22 @@ class MainDialog(QtWidgets.QDialog):
             corners_overlay, corners_overlay_roi = self.core.game_table.get_camera_corners_overlay()
             if corners_overlay is not None:
                 image = common.composite_images(image, corners_overlay, corners_overlay_roi[0], corners_overlay_roi[1])
+
+        # Debug
+        if self._debug_overlay_needs_update and self._debug_data is not None:
+            self._debug_overlay = self.core.game_table.create_debug_overlay(debug_data=self._debug_data)
+            self._debug_overlay_needs_update = False
+
+        if self._debug_overlay is not None:
+            roi = self.core.game_table.get_camera_roi()
+            if roi is not None:
+                image = common.composite_images(
+                    image,
+                    self._debug_overlay,
+                    roi[constants.ROI_MIN_X],
+                    roi[constants.ROI_MIN_Y],
+                    composite_mode=QtGui.QPainter.CompositionMode.CompositionMode_Plus
+                )
 
         if self.ui.check_display_actual_resolution.isChecked():
             self.ui.label_viewport_image.resize(image.width(), image.height())
@@ -725,8 +774,8 @@ class MainDialog(QtWidgets.QDialog):
         :type do_connections: bool
         """
         if do_connections:
-            self.ui.label_viewport_image.mouse_press_event.connect(partial(self.update_table_camera_corners, True))
-            self.ui.label_viewport_image.mouse_drag_event.connect(partial(self.update_table_camera_corners, False))
+            self.ui.label_viewport_image.mouse_press_event.connect(partial(self.process_viewport_mouse_event, True))
+            self.ui.label_viewport_image.mouse_drag_event.connect(partial(self.process_viewport_mouse_event, False))
             self.ui.edit_table_name.textChanged.connect(self.core.game_table.set_name)
             self.ui.double_table_w.valueChanged.connect(self.core.game_table.set_width)
             self.ui.double_table_h.valueChanged.connect(self.core.game_table.set_height)
@@ -828,22 +877,45 @@ class MainDialog(QtWidgets.QDialog):
         self.set_enabled_for_calibrations()
 
     @QtCore.pyqtSlot(bool, float, float)
-    def update_table_camera_corners(self, is_press, norm_pos_x, norm_pos_y):
-        """Update table corners values.
+    def process_viewport_mouse_event(self, is_press, norm_pos_x, norm_pos_y):
+        """Process mouse event from the viewport.
+
+        This function deals with table corners values for example.
 
         :param is_press: Whether this is a press event instead of a drag.
         :type is_press: bool
+
+        :param norm_pos_x: Position relative to viewport width as [0, 1[.
+        :type norm_pos_x: float
+
+        :param norm_pos_x: Position relative to viewport height as [0, 1[.
+        :type norm_pos_x: float
         """
         current_camera = self.core.camera_manager.get_camera()
-        if current_camera is None or not current_camera.is_calibrated() or self.core.game_table.is_calibrated():
+        if current_camera is None or not current_camera.is_calibrated():
             return
 
         width = self.latest_image.width()
         height = self.latest_image.height()
 
+        if self.core.game_table.is_calibrated() and is_press:
+            pos_mouse = (norm_pos_x * width, norm_pos_y * height)
+            min_x, min_y, _, _ = self.core.game_table.get_camera_roi()
+            camera_roi_pos_mouse = (pos_mouse[0] - min_x, pos_mouse[1] - min_y)
+            game_pos = self.core.game_table.warp_camera_position_to_game(camera_roi_pos_mouse, rounded=True)
+            qr_message, qr_pos = self.core.qr_detector.query(game_pos)
+            if qr_message is not None:
+                qr_pos_in_mm = (
+                    self.core.game_table.convert_pixel_to_mm(qr_pos[0]),
+                    self.core.game_table.convert_pixel_to_mm(qr_pos[1])
+                )
+                print(f"QR: {qr_message} = {qr_pos_in_mm}")
+            return
+
         if is_press:
-            corner_points_list = self.core.game_table.get_in_camera_corners_as_points()
             pos_mouse = QtCore.QPoint(int(norm_pos_x * width), int(norm_pos_y * height))
+
+            corner_points_list = self.core.game_table.get_in_camera_corners_as_points()
 
             self._selected_corner_index = None
             closest_corner_index = None
@@ -874,3 +946,14 @@ class MainDialog(QtWidgets.QDialog):
             self.table_corners_widgets_dict['camera'][self._selected_corner_index][constants.TABLE_CORNERS_AXIS_Y].setValue(pos_y)
 
             self.core.game_table.set_camera_corners_overlay_needs_update()
+
+    @QtCore.pyqtSlot(dict)
+    def set_debug_data(self, data):
+        """Notify of new debug data.
+
+        :param data: Debug data.
+        :type data: dict
+        """
+        if self.core.game_table.is_calibrated():
+            self._debug_data = data
+            self._debug_overlay_needs_update = True
