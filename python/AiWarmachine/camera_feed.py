@@ -27,8 +27,7 @@ import numpy as np
 import cv2 as cv
 from PyQt6 import QtCore
 
-from . import constants
-from . import common
+from . import constants, common
 
 
 class CameraFeed(QtCore.QThread):
@@ -89,9 +88,10 @@ class CameraFeed(QtCore.QThread):
             camera_capture_properties_dict = self._camera.get_capture_properties_copy()
             for property_id, new_value in camera_capture_properties_dict.items():
                 if new_value != self._capture_properties_dict.get(property_id):
+                    property_name = constants.CAPTURE_PROPERTIES_NAMES_DICT.get(property_id, 'Unknown')
+                    set_result = self._capture.set(property_id, new_value)
                     if self.debug:
-                        property_name = constants.CAPTURE_PROPERTIES_NAMES_DICT.get(property_id, 'Unknown')
-                        print(f"Updating capture property '{property_name}' with value {new_value}. [{self._capture.set(property_id, new_value)}]")
+                        print(f"Updating capture property '{property_name}' with value {new_value}. [{set_result}]")
                     required_update = True
 
             if required_update:

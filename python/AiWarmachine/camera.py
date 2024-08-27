@@ -29,9 +29,7 @@ from PyQt6 import QtCore
 import numpy as np
 import cv2 as cv
 
-from . import constants
-from . import camera_feed
-from . import common
+from . import constants, camera_feed, common
 
 
 class Camera(QtCore.QObject):
@@ -455,7 +453,7 @@ class Camera(QtCore.QObject):
             'mtx': self._mtx.tolist() if self._mtx is not None else None,
             'dist': self._dist.tolist() if self._dist is not None else None,
             'mtx_prime': self._mtx_prime.tolist() if self._mtx_prime is not None else None,
-            'roi': self._roi,
+            'roi': self._roi.tolist() if self._roi is not None else None,
             'tvec': self._tvec.tolist() if self._tvec is not None else None,
             'rvec': self._rvec.tolist() if self._rvec is not None else None,
         }

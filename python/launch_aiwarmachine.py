@@ -14,12 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-"""Test calibration dialog to setup your cameras and table."""
+"""Application launcher."""
+
 import sys
 
 from PyQt6 import QtWidgets, QtGui, QtCore
 
-from AiWarmachine import calibration_dialog
+from AiWarmachine import main_core, main_dialog
 
 app = QtWidgets.QApplication(sys.argv)
 
@@ -50,6 +51,6 @@ app.setStyleSheet(
     "QLineEdit:disabled {color: rgb(86, 112, 164);}\n"
 )
 
-
-cal_dial = calibration_dialog.CalibrationDialog()
+main_core = main_core.MainCore()
+cal_dial = main_dialog.MainDialog(core=main_core, parent=None)
 app.exec()
