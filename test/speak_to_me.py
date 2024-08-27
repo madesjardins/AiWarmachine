@@ -1,7 +1,5 @@
 from PyQt6 import QtCore
-# from gtts import gTTS
 import os
-from io import BytesIO
 import pygame
 import argparse
 import queue
@@ -9,9 +7,7 @@ import sys
 import sounddevice as sd
 from ast import literal_eval
 from vosk import Model, KaldiRecognizer
-from TTS.api import TTS
 import subprocess
-import pyglet
 import mmap
 import re
 
@@ -25,6 +21,7 @@ def int_or_str(text):
         return int(text)
     except ValueError:
         return text
+
 
 def callback(indata, frames, time, status):
     """This is called (from a separate thread) for each audio block."""
@@ -46,7 +43,6 @@ class Narrator(QtCore.QObject):
     def __init__(self):
         pygame.init()
         pygame.mixer.init(frequency=22050)
-        # self.tts = TTS("tts_models/en/ek1/tacotron2", progress_bar=False).to("cuda")
         self.output_file_template = r"D:\tmp\output.{:04d}.wav"
         self.sound_num = 0
         self.startupinfo = subprocess.STARTUPINFO()
@@ -61,11 +57,6 @@ class Narrator(QtCore.QObject):
             # if v_result := self.voice_re_c.match(text):
             #     voice = VOICES_DICT.get(v_result.group("vnum"), voice)
             #     text = text[len(v_result.group(0)):]
-            # tts = gTTS(text=text, lang=lang, tld=tld, slow=slow)
-            # fp = BytesIO()
-            # tts.write_to_fp(fp)
-            # fp.seek(0)
-            # self.tts.tts_to_file(text=text, file_path=self.output_file)
             output_file = self.output_file_template.format(self.sound_num)
             command_str = f"echo \"{text}\" | {piper_exe} -m {piper_dir}\\voices\\{voice}.onnx -f {output_file}"
             print(command_str)
