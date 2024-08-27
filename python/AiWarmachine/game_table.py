@@ -56,7 +56,7 @@ class GameTable(QtCore.QObject):
         :param height: Height of the table in mm. (609.6)
         :type height: float
 
-        :param resolution_factor: Precision of the table projector image in mm/px. (2)
+        :param resolution_factor: Precision of the table projector image in px/mm. (2)
         :type resolution_factor: int
 
         :param in_camera_corners: The table corners as seen by the camera in order BL, TL, TR, BR.
@@ -139,7 +139,7 @@ class GameTable(QtCore.QObject):
     def set_resolution_factor(self, value):
         """Set the resolution factor.
 
-        :param value: The resolution factor in mm/px.
+        :param value: The resolution factor in px/mm.
         :type value: int
         """
         if self.disable_slots:

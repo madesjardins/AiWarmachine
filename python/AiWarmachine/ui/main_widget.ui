@@ -1763,7 +1763,7 @@
                   <enum>Qt::StrongFocus</enum>
                  </property>
                  <property name="suffix">
-                  <string>mm/px</string>
+                  <string>px/mm</string>
                  </property>
                  <property name="minimum">
                   <number>1</number>
