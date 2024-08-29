@@ -1,6 +1,6 @@
 #
 # This file is part of the AiWarmachine distribution (https://github.com/madesjardins/AiWarmachine).
-# Copyright (c) 2023 Marc-Antoine Desjardins.
+# Copyright (c) 2023-2024 Marc-Antoine Desjardins.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

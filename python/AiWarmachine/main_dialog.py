@@ -1,6 +1,6 @@
 #
 # This file is part of the AiWarmachine distribution (https://github.com/madesjardins/AiWarmachine).
-# Copyright (c) 2023 Marc-Antoine Desjardins.
+# Copyright (c) 2023-2024 Marc-Antoine Desjardins.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -108,6 +108,9 @@ class MainDialog(QtWidgets.QDialog):
         devices_list = [f'{_id:02d}: {self.core.device_ids_dict[_id]}' for _id in sorted(self.core.device_ids_dict.keys())]
         self.ui.combo_voice_device.addItems(devices_list)
         self.ui.combo_voice_device.setCurrentIndex(0)
+        if self.core.voices_list:
+            self.ui.combo_voice_narrator.addItems(self.core.voices_list)
+            self.ui.combo_voice_narrator.setCurrentIndex(0)
 
     def _init_connections(self):
         """Initialize connections."""
@@ -173,9 +176,12 @@ class MainDialog(QtWidgets.QDialog):
 
         # Voice
         self.ui.tab_widget_calibration.currentChanged.connect(self.tab_widget_changed)
+
         self.ui.combo_voice_device.currentIndexChanged.connect(self.set_voice_recognition_device_id)
-        self.ui.combo_voice_device.currentIndexChanged.connect(self.stop_voice_recognition)
         self.ui.push_voice_recognition_test.clicked.connect(self.toggle_voice_recognition)
+
+        self.ui.combo_voice_narrator.currentIndexChanged.connect(self.set_narrator_voice)
+        self.ui.push_voice_narrator_test.clicked.connect(self.add_narrator_text)
 
     def launch_projector_dialog(self):
         """Pop the projector dialog, connect ticker and start."""
@@ -1011,6 +1017,7 @@ class MainDialog(QtWidgets.QDialog):
         """
         if index != VOICE_TAB_INDEX:
             self.stop_voice_recognition()
+            self.stop_voice_narrator()
 
     @QtCore.pyqtSlot(str)
     def set_voice_recognition_text(self, text):
@@ -1024,5 +1031,22 @@ class MainDialog(QtWidgets.QDialog):
     @QtCore.pyqtSlot(int)
     def set_voice_recognition_device_id(self, _=0):
         """Set the voice recognition device id."""
+        self.stop_voice_recognition()
         if re_result := re.match(VOICE_RECOGNITION_DEVICE_ID_REGEX, self.ui.combo_voice_device.currentText()):
             self.core.voice_recognizer.set_device_id(int(re_result.group('device_id')))
+
+    @QtCore.pyqtSlot(int)
+    def set_narrator_voice(self, _=0):
+        """Set a new narrator voice."""
+        self.core.narrator.set_voice(self.ui.combo_voice_narrator.currentText())
+
+    @QtCore.pyqtSlot()
+    def add_narrator_text(self):
+        """Add text for narrator."""
+        self.core.narrator.speak(text=self.ui.edit_voice_narrator.text())
+        if not self.core.narrator.is_running():
+            self.core.narrator.start()
+
+    def stop_voice_narrator(self):
+        """Stop the voice narrator."""
+        self.core.narrator.stop()

@@ -1,6 +1,6 @@
 #
 # This file is part of the AiWarmachine distribution (https://github.com/madesjardins/AiWarmachine).
-# Copyright (c) 2023 Marc-Antoine Desjardins.
+# Copyright (c) 2023-2024 Marc-Antoine Desjardins.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ import time
 
 from PyQt6 import QtCore, QtGui
 
-from . import constants, camera_manager, camera_calibration, common, qr_detection, game_table, voice_recognizer
+from . import constants, camera_manager, camera_calibration, common, qr_detection, game_table, voice_recognition, voice_narration
 
 
 class MainCore(QtCore.QObject):
@@ -49,9 +49,10 @@ class MainCore(QtCore.QObject):
         self.game_table = game_table.GameTable()
         self.qr_detector = qr_detection.QRDetector(self)
 
-        self.device_ids_dict = voice_recognizer.query_devices()
-        self.voice_recognizer = voice_recognizer.VoiceRecognizer(0)
-        self.narrator = None
+        self.device_ids_dict = voice_recognition.query_devices()
+        self.voice_recognizer = voice_recognition.VoiceRecognizer()
+        self.voices_list = voice_narration.get_available_voices()
+        self.narrator = voice_narration.Narrator(voice=self.voices_list[0] if self.voices_list else None)
 
         self._init_tickers()
 
@@ -210,3 +211,5 @@ class MainCore(QtCore.QObject):
         self.camera_manager.release_all()
         self.voice_recognizer.stop()
         self.voice_recognizer.wait()
+        self.narrator.stop()
+        self.narrator.wait()
