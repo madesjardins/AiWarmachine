@@ -29,6 +29,10 @@ import cv2 as cv
 from . import common, constants, viewport_label, projector_dialog
 
 
+VOICE_TAB_INDEX = 2
+VOICE_RECOGNITION_DEVICE_ID_REGEX = "^(?P<device_id>[0-9]+):"
+
+
 class MainDialog(QtWidgets.QDialog):
     """Main dialog."""
 
@@ -100,6 +104,11 @@ class MainDialog(QtWidgets.QDialog):
 
         self.launch_projector_dialog()
 
+        # Voice Tab
+        devices_list = [f'{_id:02d}: {self.core.device_ids_dict[_id]}' for _id in sorted(self.core.device_ids_dict.keys())]
+        self.ui.combo_voice_device.addItems(devices_list)
+        self.ui.combo_voice_device.setCurrentIndex(0)
+
     def _init_connections(self):
         """Initialize connections."""
         # General events
@@ -161,6 +170,12 @@ class MainDialog(QtWidgets.QDialog):
 
         self.new_debug_data.connect(self.projector_dialog.set_debug_data)
         self.new_debug_data.connect(self.set_debug_data)
+
+        # Voice
+        self.ui.tab_widget_calibration.currentChanged.connect(self.tab_widget_changed)
+        self.ui.combo_voice_device.currentIndexChanged.connect(self.set_voice_recognition_device_id)
+        self.ui.combo_voice_device.currentIndexChanged.connect(self.stop_voice_recognition)
+        self.ui.push_voice_recognition_test.clicked.connect(self.toggle_voice_recognition)
 
     def launch_projector_dialog(self):
         """Pop the projector dialog, connect ticker and start."""
@@ -765,7 +780,7 @@ class MainDialog(QtWidgets.QDialog):
     # #############################################
     #
     # Game table
-
+    #
     # #############################################
     def _init_game_table(self, do_connections=True):
         """Initialize game table values based on UI values and connections.
@@ -957,3 +972,57 @@ class MainDialog(QtWidgets.QDialog):
         if self.core.game_table.is_calibrated():
             self._debug_data = data
             self._debug_overlay_needs_update = True
+
+    # #############################################
+    #
+    # VOICE
+    #
+    # #############################################
+    @QtCore.pyqtSlot(int)
+    def stop_voice_recognition(self, _=0):
+        """Stop the voice recognition."""
+        self.core.voice_recognizer.stop()
+        self.core.voice_recognizer.wait()
+        self.ui.push_voice_recognition_test.setText('Test')
+        self.ui.edit_voice_recognition.setText("")
+        try:
+            self.core.voice_recognizer.text_partial_result.disconnect(self.set_voice_recognition_text)
+            self.core.voice_recognizer.text_result.disconnect(self.set_voice_recognition_text)
+        except Exception:
+            pass
+
+    @QtCore.pyqtSlot()
+    def toggle_voice_recognition(self):
+        """Start/stop the voice recognition."""
+        if self.core.voice_recognizer.is_running():
+            self.stop_voice_recognition()
+        else:
+            self.ui.push_voice_recognition_test.setText('Stop')
+            self.core.voice_recognizer.start()
+            self.core.voice_recognizer.text_partial_result.connect(self.set_voice_recognition_text)
+            self.core.voice_recognizer.text_result.connect(self.set_voice_recognition_text)
+
+    @QtCore.pyqtSlot(int)
+    def tab_widget_changed(self, index):
+        """Tab widget changed, if not voice stop voice recognition.
+
+        :param index: The tab index.
+        :type index: int
+        """
+        if index != VOICE_TAB_INDEX:
+            self.stop_voice_recognition()
+
+    @QtCore.pyqtSlot(str)
+    def set_voice_recognition_text(self, text):
+        """Set the voice recognizer test preview.
+
+        :param text: The text.
+        :type text: str
+        """
+        self.ui.edit_voice_recognition.setText(text)
+
+    @QtCore.pyqtSlot(int)
+    def set_voice_recognition_device_id(self, _=0):
+        """Set the voice recognition device id."""
+        if re_result := re.match(VOICE_RECOGNITION_DEVICE_ID_REGEX, self.ui.combo_voice_device.currentText()):
+            self.core.voice_recognizer.set_device_id(int(re_result.group('device_id')))

@@ -7,10 +7,11 @@ Currently, you can use the app to calibrate your camera and projector, set table
 2. Install numpy using pip in a cmd prompt: `pip install numpy`
 3. Install PyQt6 using pip in a cmd prompt: `pip install PyQt6`
 4. Install OpenCV using pip in a cmd prompt: `pip install opencv-python`
+5. Install sounddevice using pip in a cmd prompt: `pip install sounddevice`
 6. Install Vosk using pip in a cmd prompt: `pip install vosk`
-7. install piper.exe (https://github.com/rhasspy/piper)
-8. install Java
-9. install PyBoof
+7. Install piper.exe (https://github.com/rhasspy/piper)
+8. Install Java (https://www.java.com/en/download/)
+9. Install PyBoof using pip in a cmd prompt: `pip install pyboof`
 10. Change line 160 of "...\\Python3XX\\Lib\\site-packages\\pyboof\\\_\_init\_\_.py" for:`    pbg.mmap_file = mmap.mmap(pbg.mmap_fid.fileno(), length=0)`
 11. Download and unzip latest release version of AiWarmachine.
 12. Download additional files from https://drive.google.com/drive/folders/1DJvlq9WAmmEEuNAgDuJHA60bm_lzKuBN?usp=share_link

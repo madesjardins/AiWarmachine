@@ -31,10 +31,10 @@ def callback(indata, frames, time, status):
 
 
 VOICES_DICT = {
-    'one': "en_US-amy-medium",
-    'two': "en_US-kristin-medium", 'to': "en_US-kristin-medium",
-    'three': "en_GB-cori-high", 'tree': "en_GB-cori-high",
-    'four': "en_GB-aru-medium", 'for': "en_US-aru-medium",
+    'one': "en_US-amy",
+    'two': "en_US-kristin", 'to': "en_US-kristin",
+    'three': "en_GB-cori", 'tree': "en_GB-cori",
+    'four': "en_GB-aru", 'for': "en_GB-aru",
 }
 
 
@@ -53,7 +53,7 @@ class Narrator(QtCore.QObject):
 
     def speak(self, text, lang='en', tld='us', slow=False, wait_till_over=True):
         if text.strip():
-            voice = "FR_mls_1840"  # VOICES_DICT['two']
+            voice = VOICES_DICT['four']  # "FR_mls_1840"  #
             # if v_result := self.voice_re_c.match(text):
             #     voice = VOICES_DICT.get(v_result.group("vnum"), voice)
             #     text = text[len(v_result.group(0)):]
@@ -129,9 +129,11 @@ if __name__ == '__main__':
                 if rec.AcceptWaveform(data):
                     result_dict = literal_eval(rec.Result()) or {}
                     text = result_dict.get('text')
-                    print(text)
+                    print(f"You >>> {text}")
                     if text == "quit":
                         break
+                    elif text in ["huh", "hum", "ah", "ha"]:
+                        continue
                     elif text:
                         narrator.speak(text, wait_till_over=False)
                 # else:

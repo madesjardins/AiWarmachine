@@ -20,7 +20,7 @@ import time
 
 from PyQt6 import QtCore, QtGui
 
-from . import constants, camera_manager, camera_calibration, common, qr_detection, game_table
+from . import constants, camera_manager, camera_calibration, common, qr_detection, game_table, voice_recognizer
 
 
 class MainCore(QtCore.QObject):
@@ -48,6 +48,10 @@ class MainCore(QtCore.QObject):
         self.camera_calibration_helper = camera_calibration.CameraCalibrationHelper()
         self.game_table = game_table.GameTable()
         self.qr_detector = qr_detection.QRDetector(self)
+
+        self.device_ids_dict = voice_recognizer.query_devices()
+        self.voice_recognizer = voice_recognizer.VoiceRecognizer(0)
+        self.narrator = None
 
         self._init_tickers()
 
@@ -204,3 +208,5 @@ class MainCore(QtCore.QObject):
         self.qr_detection_ticker.stop()
         self.projector_ticker.stop()
         self.camera_manager.release_all()
+        self.voice_recognizer.stop()
+        self.voice_recognizer.wait()
