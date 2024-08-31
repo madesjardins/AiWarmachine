@@ -69,7 +69,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _init_ui(self):
         """Initialize the UI."""
         self.ui = uic.loadUi(os.path.join(os.path.dirname(__file__), "ui", "main_widget.ui"))
-        self.setWindowTitle("AiWarmachine")
+        self.setWindowTitle(f"AiWarmachine {constants.VERSION}")
         self.setCentralWidget(self.ui)
 
         # Menu
