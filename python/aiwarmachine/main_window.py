@@ -1,6 +1,6 @@
 #
 # This file is part of the AiWarmachine distribution (https://github.com/madesjardins/AiWarmachine).
-# Copyright (c) 2023 Marc-Antoine Desjardins.
+# Copyright (c) 2023-2024 Marc-Antoine Desjardins.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-"""Main dialog to setup your cameras and table."""
+"""Main window to setup your cameras and table."""
 
 import os
 import traceback
@@ -22,6 +22,7 @@ import re
 from functools import partial
 from datetime import datetime
 import time
+import webbrowser
 
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import cv2 as cv
@@ -29,8 +30,12 @@ import cv2 as cv
 from . import common, constants, viewport_label, projector_dialog
 
 
-class MainDialog(QtWidgets.QDialog):
-    """Main dialog."""
+VOICE_TAB_INDEX = 2
+VOICE_RECOGNITION_DEVICE_ID_REGEX = "^(?P<device_id>[0-9]+):"
+
+
+class MainWindow(QtWidgets.QMainWindow):
+    """Main window."""
 
     new_debug_data = QtCore.pyqtSignal(dict)
 
@@ -64,10 +69,14 @@ class MainDialog(QtWidgets.QDialog):
     def _init_ui(self):
         """Initialize the UI."""
         self.ui = uic.loadUi(os.path.join(os.path.dirname(__file__), "ui", "main_widget.ui"))
-        self.setWindowTitle("Calibration")
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self.ui)
-        self.setLayout(layout)
+        self.setWindowTitle(f"AiWarmachine {constants.VERSION}")
+        self.setCentralWidget(self.ui)
+
+        # Menu
+        self.menu_bar = QtWidgets.QMenuBar(self)
+        self.qmenu = self.menu_bar.addMenu("Help")
+        self.github_action = self.qmenu.addAction("GitHub")
+        self.setMenuBar(self.menu_bar)
 
         # Label for viewport
         self.ui.label_viewport_image = viewport_label.ViewportLabel(self.ui.scroll_viewport_widget)
@@ -99,6 +108,14 @@ class MainDialog(QtWidgets.QDialog):
         }
 
         self.launch_projector_dialog()
+
+        # Voice Tab
+        devices_list = [f'{_id:02d}: {self.core.device_ids_dict[_id]}' for _id in sorted(self.core.device_ids_dict.keys())]
+        self.ui.combo_voice_device.addItems(devices_list)
+        self.ui.combo_voice_device.setCurrentIndex(0)
+        if self.core.voices_list:
+            self.ui.combo_voice_narrator.addItems(self.core.voices_list)
+            self.ui.combo_voice_narrator.setCurrentIndex(0)
 
     def _init_connections(self):
         """Initialize connections."""
@@ -162,9 +179,21 @@ class MainDialog(QtWidgets.QDialog):
         self.new_debug_data.connect(self.projector_dialog.set_debug_data)
         self.new_debug_data.connect(self.set_debug_data)
 
+        # Voice
+        self.ui.tab_widget_calibration.currentChanged.connect(self.tab_widget_changed)
+
+        self.ui.combo_voice_device.currentIndexChanged.connect(self.set_voice_recognition_device_id)
+        self.ui.push_voice_recognition_test.clicked.connect(self.toggle_voice_recognition)
+
+        self.ui.combo_voice_narrator.currentIndexChanged.connect(self.set_narrator_voice)
+        self.ui.push_voice_narrator_test.clicked.connect(self.add_narrator_text)
+
+        # Menu
+        self.github_action.triggered.connect(self.open_github)
+
     def launch_projector_dialog(self):
         """Pop the projector dialog, connect ticker and start."""
-        self.projector_dialog = projector_dialog.ProjectorDialog(core=self.core, main_dialog=self)
+        self.projector_dialog = projector_dialog.ProjectorDialog(core=self.core, main_window=self)
         self.core.projector_ticker.timeout.connect(self.projector_dialog.tick)
         self.ui.spin_projector_refresh_rate.valueChanged.connect(self.core.set_projector_ticker_rate)
         self.core.projector_ticker.start()
@@ -236,6 +265,11 @@ class MainDialog(QtWidgets.QDialog):
             }
 
         self.new_debug_data.emit(data)
+
+    @QtCore.pyqtSlot()
+    def open_github(self):
+        """Open GitHub wiki webpage in browser."""
+        webbrowser.open(constants.GITHUB_WIKI_URL, new=2)
 
     # #############################################
     #
@@ -765,7 +799,7 @@ class MainDialog(QtWidgets.QDialog):
     # #############################################
     #
     # Game table
-
+    #
     # #############################################
     def _init_game_table(self, do_connections=True):
         """Initialize game table values based on UI values and connections.
@@ -957,3 +991,75 @@ class MainDialog(QtWidgets.QDialog):
         if self.core.game_table.is_calibrated():
             self._debug_data = data
             self._debug_overlay_needs_update = True
+
+    # #############################################
+    #
+    # VOICE
+    #
+    # #############################################
+    @QtCore.pyqtSlot(int)
+    def stop_voice_recognition(self, _=0):
+        """Stop the voice recognition."""
+        self.core.voice_recognizer.stop()
+        self.core.voice_recognizer.wait()
+        self.ui.push_voice_recognition_test.setText('Test')
+        self.ui.edit_voice_recognition.setText("")
+        try:
+            self.core.voice_recognizer.text_partial_result.disconnect(self.set_voice_recognition_text)
+            self.core.voice_recognizer.text_result.disconnect(self.set_voice_recognition_text)
+        except Exception:
+            pass
+
+    @QtCore.pyqtSlot()
+    def toggle_voice_recognition(self):
+        """Start/stop the voice recognition."""
+        if self.core.voice_recognizer.is_running():
+            self.stop_voice_recognition()
+        else:
+            self.ui.push_voice_recognition_test.setText('Stop')
+            self.core.voice_recognizer.start()
+            self.core.voice_recognizer.text_partial_result.connect(self.set_voice_recognition_text)
+            self.core.voice_recognizer.text_result.connect(self.set_voice_recognition_text)
+
+    @QtCore.pyqtSlot(int)
+    def tab_widget_changed(self, index):
+        """Tab widget changed, if not voice stop voice recognition.
+
+        :param index: The tab index.
+        :type index: int
+        """
+        if index != VOICE_TAB_INDEX:
+            self.stop_voice_recognition()
+            self.stop_voice_narrator()
+
+    @QtCore.pyqtSlot(str)
+    def set_voice_recognition_text(self, text):
+        """Set the voice recognizer test preview.
+
+        :param text: The text.
+        :type text: str
+        """
+        self.ui.edit_voice_recognition.setText(text)
+
+    @QtCore.pyqtSlot(int)
+    def set_voice_recognition_device_id(self, _=0):
+        """Set the voice recognition device id."""
+        self.stop_voice_recognition()
+        if re_result := re.match(VOICE_RECOGNITION_DEVICE_ID_REGEX, self.ui.combo_voice_device.currentText()):
+            self.core.voice_recognizer.set_device_id(int(re_result.group('device_id')))
+
+    @QtCore.pyqtSlot(int)
+    def set_narrator_voice(self, _=0):
+        """Set a new narrator voice."""
+        self.core.narrator.set_voice(self.ui.combo_voice_narrator.currentText())
+
+    @QtCore.pyqtSlot()
+    def add_narrator_text(self):
+        """Add text for narrator."""
+        self.core.narrator.speak(text=self.ui.edit_voice_narrator.text())
+        if not self.core.narrator.is_running():
+            self.core.narrator.start()
+
+    def stop_voice_narrator(self):
+        """Stop the voice narrator."""
+        self.core.narrator.stop()

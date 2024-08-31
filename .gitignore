@@ -130,7 +130,6 @@ dmypy.json
 
 # AiWarmachine specific
 saved/
-
 images/
-
-test/piper
+apps/
+temp/

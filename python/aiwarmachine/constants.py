@@ -1,6 +1,6 @@
 #
 # This file is part of the AiWarmachine distribution (https://github.com/madesjardins/AiWarmachine).
-# Copyright (c) 2023 Marc-Antoine Desjardins.
+# Copyright (c) 2023-2024 Marc-Antoine Desjardins.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,12 +16,23 @@
 #
 """Various constants."""
 
+import os
 import sys
 
 from PyQt6 import QtWidgets, QtCore
 import cv2 as cv
 
+VERSION = "v0.0.1"  # major.minor.build
+
+GITHUB_WIKI_URL = "https://github.com/madesjardins/AiWarmachine/wiki"
+
 IS_LINUX = sys.platform.startswith('linux')
+
+TEMP_DIRPATH = os.getenv("TEMP_DIRPATH")
+VOICE_NARRATOR_TEMP_OUTPUT_FILEPATH_TEMPLATE = os.path.join(TEMP_DIRPATH, "narrator.{:04d}.wav")
+PIPER_DIRPATH = os.getenv("PIPER_DIRPATH")
+PIPER_EXECUTABLE = os.path.join(PIPER_DIRPATH, "piper.exe")
+PIPER_VOICES_DIRPATH = os.path.join(PIPER_DIRPATH, "voices")
 
 CRITERIA = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
