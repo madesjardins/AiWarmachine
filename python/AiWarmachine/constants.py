@@ -16,14 +16,23 @@
 #
 """Various constants."""
 
+import os
 import sys
 
 from PyQt6 import QtWidgets, QtCore
 import cv2 as cv
 
+VERSION = "v0.0.1"  # major.minor.build
+
+GITHUB_WIKI_URL = "https://github.com/madesjardins/AiWarmachine/wiki"
+
 IS_LINUX = sys.platform.startswith('linux')
 
-TEMP_DIRPATH = r"D:\tmp"
+TEMP_DIRPATH = os.getenv("TEMP_DIRPATH")
+VOICE_NARRATOR_TEMP_OUTPUT_FILEPATH_TEMPLATE = os.path.join(TEMP_DIRPATH, "narrator.{:04d}.wav")
+PIPER_DIRPATH = os.getenv("PIPER_DIRPATH")
+PIPER_EXECUTABLE = os.path.join(PIPER_DIRPATH, "piper.exe")
+PIPER_VOICES_DIRPATH = os.path.join(PIPER_DIRPATH, "voices")
 
 CRITERIA = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
@@ -163,8 +172,3 @@ ROI_MIN_X = 0
 ROI_MIN_Y = 1
 ROI_MAX_X = 2
 ROI_MAX_Y = 3
-
-VOICE_NARRATOR_TEMP_OUTPUT_FILEPATH_TEMPLATE = TEMP_DIRPATH + "\\narrator.{:04d}.wav"
-PIPER_DIRPATH = "D:\\Dev_Projects\\apps\\piper"
-PIPER_EXECUTABLE = f"{PIPER_DIRPATH}\\piper.exe"
-PIPER_VOICES_DIRPATH = f"{PIPER_DIRPATH}\\voices"

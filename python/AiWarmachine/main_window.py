@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-"""Main dialog to setup your cameras and table."""
+"""Main window to setup your cameras and table."""
 
 import os
 import traceback
@@ -22,6 +22,7 @@ import re
 from functools import partial
 from datetime import datetime
 import time
+import webbrowser
 
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import cv2 as cv
@@ -33,8 +34,8 @@ VOICE_TAB_INDEX = 2
 VOICE_RECOGNITION_DEVICE_ID_REGEX = "^(?P<device_id>[0-9]+):"
 
 
-class MainDialog(QtWidgets.QDialog):
-    """Main dialog."""
+class MainWindow(QtWidgets.QMainWindow):
+    """Main window."""
 
     new_debug_data = QtCore.pyqtSignal(dict)
 
@@ -68,10 +69,14 @@ class MainDialog(QtWidgets.QDialog):
     def _init_ui(self):
         """Initialize the UI."""
         self.ui = uic.loadUi(os.path.join(os.path.dirname(__file__), "ui", "main_widget.ui"))
-        self.setWindowTitle("Calibration")
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self.ui)
-        self.setLayout(layout)
+        self.setWindowTitle("AiWarmachine")
+        self.setCentralWidget(self.ui)
+
+        # Menu
+        self.menu_bar = QtWidgets.QMenuBar(self)
+        self.qmenu = self.menu_bar.addMenu("Help")
+        self.github_action = self.qmenu.addAction("GitHub")
+        self.setMenuBar(self.menu_bar)
 
         # Label for viewport
         self.ui.label_viewport_image = viewport_label.ViewportLabel(self.ui.scroll_viewport_widget)
@@ -183,9 +188,12 @@ class MainDialog(QtWidgets.QDialog):
         self.ui.combo_voice_narrator.currentIndexChanged.connect(self.set_narrator_voice)
         self.ui.push_voice_narrator_test.clicked.connect(self.add_narrator_text)
 
+        # Menu
+        self.github_action.triggered.connect(self.open_github)
+
     def launch_projector_dialog(self):
         """Pop the projector dialog, connect ticker and start."""
-        self.projector_dialog = projector_dialog.ProjectorDialog(core=self.core, main_dialog=self)
+        self.projector_dialog = projector_dialog.ProjectorDialog(core=self.core, main_window=self)
         self.core.projector_ticker.timeout.connect(self.projector_dialog.tick)
         self.ui.spin_projector_refresh_rate.valueChanged.connect(self.core.set_projector_ticker_rate)
         self.core.projector_ticker.start()
@@ -257,6 +265,11 @@ class MainDialog(QtWidgets.QDialog):
             }
 
         self.new_debug_data.emit(data)
+
+    @QtCore.pyqtSlot()
+    def open_github(self):
+        """Open GitHub wiki webpage in browser."""
+        webbrowser.open(constants.GITHUB_WIKI_URL, new=2)
 
     # #############################################
     #

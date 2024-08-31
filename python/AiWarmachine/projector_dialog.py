@@ -28,18 +28,18 @@ from . import viewport_label, constants, common
 class ProjectorDialog(QtWidgets.QDialog):
     """Projector dialog to draw information on board."""
 
-    def __init__(self, core, main_dialog):
+    def __init__(self, core, main_window):
         """Initialize.
 
         :param core: The main core.
         :type core: :class:`MainCore`
 
-        :param main_dialog: The parent widget.
-        :type main_dialog: :class:`MainDialog`
+        :param main_window: The parent widget.
+        :type main_window: :class:`MainWindow`
         """
-        super().__init__(parent=main_dialog, flags=QtCore.Qt.WindowType.WindowTitleHint | QtCore.Qt.WindowType.CustomizeWindowHint)
+        super().__init__(parent=main_window, flags=QtCore.Qt.WindowType.WindowTitleHint | QtCore.Qt.WindowType.CustomizeWindowHint)
         self.core = core
-        self.main_dialog = main_dialog
+        self.main_window = main_window
         self._is_fullscreen = False
         self._selected_corner_index = None
         self._selected_corner_offset = QtCore.QPoint(0, 0)
@@ -125,10 +125,10 @@ class ProjectorDialog(QtWidgets.QDialog):
 
             corner_points_list = self.core.game_table.get_in_projector_corners_as_points()
 
-            self.main_dialog.table_corners_widgets_dict['projector'][self._selected_corner_index][constants.TABLE_CORNERS_AXIS_X].setValue(
+            self.main_window.table_corners_widgets_dict['projector'][self._selected_corner_index][constants.TABLE_CORNERS_AXIS_X].setValue(
                 min(max(0, corner_points_list[self._selected_corner_index].x() + constants.MOVE_KEY_POINTS_DICT[key_text].x()), width - 1)
             )
-            self.main_dialog.table_corners_widgets_dict['projector'][self._selected_corner_index][constants.TABLE_CORNERS_AXIS_Y].setValue(
+            self.main_window.table_corners_widgets_dict['projector'][self._selected_corner_index][constants.TABLE_CORNERS_AXIS_Y].setValue(
                 min(max(0, corner_points_list[self._selected_corner_index].y() + constants.MOVE_KEY_POINTS_DICT[key_text].y()), height - 1)
             )
 
@@ -179,10 +179,10 @@ class ProjectorDialog(QtWidgets.QDialog):
                 self._selected_corner_offset = corner_points_list[closest_corner_index] - pos_mouse
 
         elif self._selected_corner_index is not None:
-            self.main_dialog.table_corners_widgets_dict['projector'][self._selected_corner_index][constants.TABLE_CORNERS_AXIS_X].setValue(
+            self.main_window.table_corners_widgets_dict['projector'][self._selected_corner_index][constants.TABLE_CORNERS_AXIS_X].setValue(
                 min(max(0, int(norm_pos_x * width) + self._selected_corner_offset.x()), width - 1)
             )
-            self.main_dialog.table_corners_widgets_dict['projector'][self._selected_corner_index][constants.TABLE_CORNERS_AXIS_Y].setValue(
+            self.main_window.table_corners_widgets_dict['projector'][self._selected_corner_index][constants.TABLE_CORNERS_AXIS_Y].setValue(
                 min(max(0, int(norm_pos_y * height) + self._selected_corner_offset.y()), height - 1)
             )
 

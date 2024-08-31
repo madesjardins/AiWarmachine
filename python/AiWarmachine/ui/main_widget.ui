@@ -1235,7 +1235,7 @@
           </size>
          </property>
          <property name="currentIndex">
-          <number>2</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="tab_calibration_images">
           <attribute name="title">
@@ -1532,19 +1532,6 @@
               </spacer>
              </item>
             </layout>
-           </item>
-           <item>
-            <widget class="Line" name="line_current_camera_settings">
-             <property name="lineWidth">
-              <number>0</number>
-             </property>
-             <property name="midLineWidth">
-              <number>1</number>
-             </property>
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
            </item>
           </layout>
          </widget>

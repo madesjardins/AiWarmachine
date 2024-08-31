@@ -16,11 +16,25 @@
 #
 """Application launcher."""
 
+import os
 import sys
 
 from PyQt6 import QtWidgets, QtGui, QtCore
 
-from AiWarmachine import main_core, main_dialog
+from AiWarmachine import main_core, main_window, constants, voice_narration
+
+# Verify installation
+if not os.path.exists(constants.PIPER_EXECUTABLE):
+    raise RuntimeError(f'Unable to find "{constants.PIPER_EXECUTABLE}".')
+
+if not voice_narration.get_available_voices():
+    raise RuntimeError(
+        f'Unable to find voices for piper.exe in "{constants.PIPER_VOICES_DIRPATH}".\n'
+        'Make sure X.onnx files have corresponding X.onnx.json files.'
+    )
+
+if not os.path.exists(constants.TEMP_DIRPATH):
+    os.makedirs(constants.TEMP_DIRPATH)
 
 app = QtWidgets.QApplication(sys.argv)
 
@@ -52,5 +66,5 @@ app.setStyleSheet(
 )
 
 main_core = main_core.MainCore()
-cal_dial = main_dialog.MainDialog(core=main_core, parent=None)
+cal_win = main_window.MainWindow(core=main_core, parent=None)
 app.exec()
