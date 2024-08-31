@@ -2851,7 +2851,7 @@
                 <enum>Qt::NoFocus</enum>
                </property>
                <property name="text">
-                <string>Say it</string>
+                <string>Speak</string>
                </property>
               </widget>
              </item>
@@ -3406,6 +3406,10 @@
   <tabstop>double_table_w</tabstop>
   <tabstop>double_table_h</tabstop>
   <tabstop>spin_table_resolution_factor</tabstop>
+  <tabstop>combo_voice_device</tabstop>
+  <tabstop>edit_voice_recognition</tabstop>
+  <tabstop>combo_voice_narrator</tabstop>
+  <tabstop>edit_voice_narrator</tabstop>
   <tabstop>spin_viewport_refresh_rate</tabstop>
   <tabstop>double_safe_image_grab_coefficient</tabstop>
   <tabstop>spin_projector_refresh_rate</tabstop>
