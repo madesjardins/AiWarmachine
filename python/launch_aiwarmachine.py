@@ -21,7 +21,7 @@ import sys
 
 from PyQt6 import QtWidgets, QtGui, QtCore
 
-from AiWarmachine import main_core, main_window, constants, voice_narration
+from aiwarmachine import main_core, main_window, constants, voice_narration
 
 # Verify installation
 if not os.path.exists(constants.PIPER_EXECUTABLE):
