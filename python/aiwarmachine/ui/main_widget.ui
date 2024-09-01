@@ -1565,7 +1565,7 @@
                 </font>
                </property>
                <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Settings&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string>&lt;b&gt;Settings&lt;/b&gt;</string>
                </property>
               </widget>
              </item>
@@ -2823,7 +2823,7 @@
                 </font>
                </property>
                <property name="text">
-                <string>Recognition</string>
+                <string>&lt;b&gt;Recognition&lt;/b&gt;</string>
                </property>
               </widget>
              </item>
@@ -2895,7 +2895,7 @@
                 </font>
                </property>
                <property name="text">
-                <string>Narrator</string>
+                <string>&lt;b&gt;Narrator&lt;/b&gt;</string>
                </property>
               </widget>
              </item>
