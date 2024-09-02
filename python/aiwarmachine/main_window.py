@@ -332,7 +332,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.ui.check_display_actual_resolution.isChecked():
             self.ui.label_viewport_image.resize(image.width(), image.height())
         else:
-            image = image.scaledToWidth(self.ui.scroll_viewport.size().width() - 20)
+            image = image.scaledToHeight(self.ui.scroll_viewport.size().height() - 20)
 
         # Show image in viewport
         self.ui.label_viewport_image.setPixmap(QtGui.QPixmap.fromImage(image))
