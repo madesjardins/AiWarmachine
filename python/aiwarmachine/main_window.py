@@ -167,9 +167,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.double_safe_image_grab_coefficient.valueChanged.connect(self.core.set_safe_image_grab_coefficient)
         self.ui.spin_qr_detection_rate.valueChanged.connect(self.core.set_qr_detection_ticker_rate)
 
-        self.ui.push_reset_qr_detection.clicked.connect(self.core.qr_detector.reset)
-
         # Debug
+        self.ui.push_reset_qr_detection.clicked.connect(self.core.qr_detector.reset)
         self.ui.double_debug_test_position_x.valueChanged.connect(self.send_debug_test)
         self.ui.double_debug_test_position_y.valueChanged.connect(self.send_debug_test)
         self.ui.spin_debug_test_position_size.valueChanged.connect(self.send_debug_test)
@@ -857,6 +856,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Calculate perspective transforms for camera -> game and game->projector."""
         self.core.game_table.calibrate()
         self.set_enabled_for_calibrations()
+        self.core.qr_detector.reset()
 
     @QtCore.pyqtSlot()
     def uncalibrate_table(self):
