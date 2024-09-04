@@ -266,6 +266,9 @@ class ProjectorDialog(QtWidgets.QDialog):
         :return: QR Detection overlay.
         :rtype: :class:`QImage`
         """
+        if not self.core.game_table.is_calibrated():
+            return None
+
         width, height = self.core.game_table.get_effective_table_image_size()
         image = np.zeros(
             (

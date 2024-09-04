@@ -854,15 +854,18 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def calibrate_table(self):
         """Calculate perspective transforms for camera -> game and game->projector."""
+        self.core.qr_detector.reset()
         self.core.game_table.calibrate()
         self.set_enabled_for_calibrations()
-        self.core.qr_detector.reset()
 
     @QtCore.pyqtSlot()
     def uncalibrate_table(self):
         """Reset prespective transforms on game table."""
+        self.core.pause_all_tickers()
         self.core.game_table.uncalibrate()
         self.set_enabled_for_calibrations()
+        self.core.qr_detector.reset()
+        self.core.resume_all_tickers()
 
     @QtCore.pyqtSlot()
     def table_save(self):
@@ -909,6 +912,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.core.game_table.load(filepath_list[0])
         self.fill_table_settings()
         self.set_enabled_for_calibrations()
+        self.core.qr_detector.reset()
 
     @QtCore.pyqtSlot(bool, float, float)
     def process_viewport_mouse_event(self, is_press, norm_pos_x, norm_pos_y):

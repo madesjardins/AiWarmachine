@@ -108,6 +108,18 @@ class MainCore(QtCore.QObject):
         self.projector_ticker.setInterval(int(self._pfps_interval * 1000))
         self.projector_ticker.start()
 
+    def pause_all_tickers(self):
+        """Pause all tickers."""
+        self.refresh_ticker.stop()
+        self.qr_detection_ticker.stop()
+        self.projector_ticker.stop()
+
+    def resume_all_tickers(self):
+        """Resume all tickers."""
+        self.refresh_ticker.start()
+        self.qr_detection_ticker.start()
+        self.projector_ticker.start()
+
     @QtCore.pyqtSlot(float)
     def set_safe_image_grab_coefficient(self, value):
         """Set the safe image grab coefficient.
