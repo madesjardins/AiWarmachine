@@ -54,7 +54,7 @@ DEFAULT_CAPTURE_PROPERTIES_DICT = {
     cv.CAP_PROP_AUTOFOCUS: 1,  # 1 = Off
     cv.CAP_PROP_FOCUS: 0,  # small = far, big = near
     cv.CAP_PROP_AUTO_EXPOSURE: 1,  # 1 = Off
-    cv.CAP_PROP_EXPOSURE: 250 if IS_LINUX else -6,
+    cv.CAP_PROP_EXPOSURE: 250 if IS_LINUX else -5,
     cv.CAP_PROP_FOURCC: cv.VideoWriter_fourcc(*'YUY2'),  # MJPG
     cv.CAP_PROP_BRIGHTNESS: 128,
     cv.CAP_PROP_CONTRAST: 128,
