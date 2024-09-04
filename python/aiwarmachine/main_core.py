@@ -63,10 +63,11 @@ class MainCore(QtCore.QObject):
 
         self.qr_detection_ticker = QtCore.QTimer()
         self.qr_detection_ticker.setInterval(int(self._qrd_interval * 1000))
+        self.qr_detection_ticker.timeout.connect(self.qr_detector.tick)
+        self.qr_detection_ticker.start()
 
         self.projector_ticker = QtCore.QTimer()
         self.projector_ticker.setInterval(int(self._pfps_interval * 1000))
-        self.projector_ticker.timeout.connect(self.qr_detector.tick)
 
     @QtCore.pyqtSlot(int)
     def set_refresh_ticker_rate(self, tps):
