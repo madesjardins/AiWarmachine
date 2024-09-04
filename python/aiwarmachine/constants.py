@@ -22,7 +22,7 @@ import sys
 from PyQt6 import QtWidgets, QtCore
 import cv2 as cv
 
-VERSION = "v0.0.2"  # major.minor.build
+VERSION = "v0.0.3"  # major.minor.build
 
 GITHUB_WIKI_URL = "https://github.com/madesjardins/AiWarmachine/wiki"
 
@@ -38,7 +38,7 @@ CRITERIA = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 DEFAULT_TICKS_PER_SECOND = 30
 DEFAULT_PROJECTOR_FRAMES_PER_SECOND = 15
-DEFAULT_QR_DETECTION_PER_SECOND = 5
+DEFAULT_QR_DETECTION_PER_SECOND = 10
 
 DEFAULT_CAPTURE_API = cv.CAP_V4L2 if IS_LINUX else cv.CAP_DSHOW
 
