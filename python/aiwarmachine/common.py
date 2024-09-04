@@ -337,29 +337,6 @@ def composite_images(
     return image_result
 
 
-def load_camera_data(filepath):
-    """Load camera data from file and format it properly.
-
-    :param filepath: The json filepath.
-    :type filepath: str
-
-    :return: Camera data.
-    :rtype: dict
-    """
-    with open(filepath, 'r') as fid:
-        camera_data = json.loads(fid.read())
-
-    camera_data['capture_properties_dict'] = {int(_k): _v for _k, _v in camera_data['capture_properties_dict'].items()}
-    camera_data['mtx'] = np.array(camera_data['mtx'], np.float32) if camera_data['mtx'] is not None else None
-    camera_data['dist'] = np.array(camera_data['dist'], np.float32) if camera_data['dist'] is not None else None
-    camera_data['mtx_prime'] = np.array(camera_data['mtx_prime'], np.float32) if camera_data['mtx_prime'] is not None else None
-    camera_data['roi'] = np.array(camera_data['roi'], np.int16) if camera_data['roi'] is not None else None
-    camera_data['tvec'] = np.array(camera_data['tvec'], np.float32) if camera_data['tvec'] is not None else None
-    camera_data['rvec'] = np.array(camera_data['rvec'], np.float32) if camera_data['rvec'] is not None else None
-
-    return camera_data
-
-
 def convert_qimage_to_numpy_array(image):
     """Convert a QImage to a numpy array.
 

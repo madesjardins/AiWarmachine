@@ -623,7 +623,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if not filepath_list or not filepath_list[0]:
             return
 
-        camera_data = common.load_camera_data(filepath_list[0])
+        camera_data = camera.load_camera_data(filepath_list[0])
         camera_data['debug'] = False
         device_id = camera_data['device_id']
         current_camera = self.core.camera_manager.get_camera()
