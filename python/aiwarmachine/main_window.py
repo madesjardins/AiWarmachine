@@ -27,7 +27,7 @@ import webbrowser
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import cv2 as cv
 
-from . import common, constants, viewport_label, projector_dialog
+from . import common, constants, viewport_label, projector_dialog, camera
 
 
 VOICE_TAB_INDEX = 2
