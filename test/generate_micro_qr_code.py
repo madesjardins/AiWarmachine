@@ -1,38 +1,69 @@
+#
+# This file is part of the AiWarmachine distribution (https://github.com/madesjardins/AiWarmachine).
+# Copyright (c) 2023-2024 Marc-Antoine Desjardins.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 3.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+"""Script to generate pages of 70 MicroQR codes to print.
+
+You'll first need to download images from the shared google drive folder of AiWarmachine:
+    - MicroQr_Int_Small_Base_Template_Page.png
+    - MicroQr_Int_No_Base_Template_Page.png
+    - Letter_300dpi.png
+
+And put them in AiWarmachine/images/MicroQR folder on your machine.
+
+Example usage:
+python generate_micro_qr_code.py 0 --small_base
+python generate_micro_qr_code.py 1000
+"""
+
 import os
+import argparse
+
 import pyboof as pb
-import cv2
-import numpy as np
 from pyboof import pbg
 from PyQt6 import QtGui
 
-MICRO_QR_INT_FILE_PATH_TEMPLATE = "D:/Dev_Projects/AiWarmachine/images/MicroQR/_tmp/MicroQr_Int_s{size:02d}_{value:04d}.png"
-MICRO_QR_INT_PAGE_FILE_PATH_TEMPLATE = "D:/Dev_Projects/AiWarmachine/images/MicroQR/MicroQr_Int_s{size:02d}_Page_{value_min:04d}_{value_max:04d}.png"
-MICRO_QR_INT_SMALL_BASE_TEMPLATE_PAGE_FILE_PATH = "D:/Dev_Projects/AiWarmachine/images/MicroQR/MicroQr_Int_Small_Base_Template_Page.png"
-LETTER_PAGE_300DPI_FILE_PATH = "D:/Dev_Projects/AiWarmachine/images/MicroQR/Letter_300dpi.png"
+AIWARMACHINE_ROOT_DIR_PATH = os.path.dirname(os.path.dirname(__file__))
 
-# def generate_all_resolution():
-#     for size in range(1, 20):
-#         message = f"AiWM{size:04d}"
-#         print(f"Generating: {message}")
-#         generator = pb.MicroQrCodeGenerator(pixels_per_module=size)
-#         generator.set_message(message)
-#         boof_gray_image = generator.generate()
-#         pbg.gateway.jvm.boofcv.io.image.UtilImageIO.savePGM(boof_gray_image, f"C:/tmp/{message}.pgm")
-
-
-# def generate_all_resolution_int():
-#     for exponent in range(0, 14):
-#         number = pow(2, exponent)
-#         print(f"Generating: {number}")
-#         generator = pb.MicroQrCodeGenerator(pixels_per_module=16)
-#         generator.set_message(number)
-#         boof_gray_image = generator.generate()
-#         file_path = f"D:/Dev_Projects/AiWarmachine/images/MicroQR/MicroQrInt_s16_{number:05d}.png"
-#         pbg.gateway.jvm.boofcv.io.image.UtilImageIO.saveImage(boof_gray_image, file_path)
+MICRO_QR_INT_FILE_PATH_TEMPLATE = AIWARMACHINE_ROOT_DIR_PATH + "/images/MicroQR/_tmp/MicroQr_Int_s{size:02d}_{value:04d}.png"
+MICRO_QR_INT_PAGE_FILE_PATH_TEMPLATE = AIWARMACHINE_ROOT_DIR_PATH + "/images/MicroQR/MicroQr_Int_s{size:02d}_Page_{value_min:04d}_{value_max:04d}.png"
+MICRO_QR_INT_SMALL_BASE_TEMPLATE_PAGE_FILE_PATH = AIWARMACHINE_ROOT_DIR_PATH + "/images/MicroQR/MicroQr_Int_Small_Base_Template_Page.png"
+MICRO_QR_INT_NO_BASE_TEMPLATE_PAGE_FILE_PATH = AIWARMACHINE_ROOT_DIR_PATH + "/images/MicroQR/MicroQr_Int_No_Base_Template_Page.png"
+LETTER_PAGE_300DPI_FILE_PATH = AIWARMACHINE_ROOT_DIR_PATH + "/images/MicroQR/Letter_300dpi.png"
 
 
 def generate_micro_qr_int(size, value_min, value_max, file_path_template):
-    """"""
+    """Generate MicroQR code in a range of values.
+
+    :param size: The number of pixels_per_module.
+    :type size: int
+
+    :param value_min: The lowest MicroQR number to generate.
+    :type value_min: int
+
+    :param value_max: The highest MicroQR number to generate.
+    :type value_max: int
+
+    :param file_path_template: The file path template for the generated images.
+    :type file_path_template: str
+
+        **Example: "D:/Dev_Projects/AiWarmachine/images/MicroQR/_tmp/MicroQr_Int_s{size:02d}_{value:04d}.png" **
+
+    :return: The list of image file paths.
+    :rtype: list[str]
+    """
     image_file_paths_list = []
     for value in range(value_min, value_max + 1):
         print(f"Generating: {value}")
@@ -85,11 +116,40 @@ def composite_images(image_base, image_overlay, overlay_x=0, overlay_y=0):
 def compose_micro_qr_int_page(
     template_page_image_file_path,
     qr_image_file_paths_list,
-    column_count, row_count,
+    column_count,
+    row_count,
     page_image_file_path,
     printable_page_image_file_path=None
 ):
-    """"""
+    """Merge the MicroQR code images on top of a page template ready for print.
+
+    :param template_page_image_file_path: The template page image file path.
+    :type template_page_image_file_path: str
+
+        **Example: "D:/Dev_Projects/AiWarmachine/images/MicroQR/MicroQr_Int_Small_Base_Template_Page.png" **
+
+    :param qr_image_file_paths_list: The list of MicroQR image filepaths.
+    :type qr_image_file_paths_list: list[str]
+
+    :param column_count: The number of columns in the template page.
+    :type column_count: int
+
+    :param row_count: The number of rows in the template page.
+    :type row_count: int
+
+    :param page_image_file_path: The output image file path.
+    :type page_image_file_path: str
+
+        **Example: "D:/Dev_Projects/AiWarmachine/images/MicroQR/MicroQr_Int_s16_Page_0000_0069.png" **
+
+    :param printable_page_image_file_path: If set, will composite the page result in the middle of this image. (None)
+    :type printable_page_image_file_path: str
+
+        **Example: "D:/Dev_Projects/AiWarmachine/images/MicroQR/Letter_300dpi.png" **
+
+    :return: The output image file path.
+    :rtype: str
+    """
     template_image = QtGui.QImage(template_page_image_file_path)
     width = template_image.width()
     offset_step_f = width / column_count
@@ -124,37 +184,28 @@ def compose_micro_qr_int_page(
 
     return page_image_file_path
 
-# img = pb.image.mmap_boof_to_numpy_U8(boof_gray_image)
 
-# print(f"{boof_gray_image.width}x{boof_gray_image.height}")
-# print(boof_gray_image.stride)
+def generate_micro_qr_int_page(column_count, row_count, value_min, size, with_small_base_circle=False):
+    """Generate a whole page of MicroQR code starting from a certain value.
 
-# cv2.imwrite("C:/tmp/boof_microqr2.png", img=img)
-# pb.swing.show(boof_gray_image, "Toto")
+    :param column_count: The number of columns in the template page.
+    :type column_count: int
 
-# img = pb.boof_to_ndarray(boof_gray_image)
-# print(img)
-# input("Press any key to exit")
-# pb.convert_boof_image(boof_gray_image, )
-# binary = pb.create_single_band(,original.getHeight(),np.uint8)
+    :param row_count: The number of rows in the template page.
+    :type row_count: int
 
+    :param value_min: The lowest MicroQR number to generate.
+    :type value_min: int
 
-def detect(dir_path):
-    for file_name in sorted(os.listdir(dir_path)):
-        file_path = os.path.join(dir_path, file_name)
-        detector = pb.FactoryFiducial(np.uint8).microqr()
-        image = pb.load_single_band(file_path, np.uint8)
-        detector.detect(image)
-        print(f"{file_name} has detected {len(detector.detections)} Micro QR Codes:")
-        print("    {}\n".format(", ".join(sorted([qr.message for qr in detector.detections]))))
+    :param size: The number of pixels_per_module.
+    :type size: int
 
-        # for qr in detector.detections:
-        #     print("  Message: " + qr.message)
-        #     print("     at: " + str(qr.bounds))
+    :param with_small_base_circle: If set to True, will circle in light gray the MicroQR as hint for cut. (False)
+    :type with_small_base_circle: bool
 
-
-def generate_micro_qr_int_page(column_count, row_count, value_min, size):
-    """"""
+    :return: The output image file path.
+    :rtype: str
+    """
     value_max = value_min + column_count * row_count - 1
     micro_qr_image_file_paths_list = generate_micro_qr_int(
         size=size,
@@ -162,8 +213,11 @@ def generate_micro_qr_int_page(column_count, row_count, value_min, size):
         value_max=value_max,
         file_path_template=MICRO_QR_INT_FILE_PATH_TEMPLATE
     )
-    return compose_micro_qr_int_page(
-        template_page_image_file_path=MICRO_QR_INT_SMALL_BASE_TEMPLATE_PAGE_FILE_PATH,
+
+    template_page_image_file_path = MICRO_QR_INT_SMALL_BASE_TEMPLATE_PAGE_FILE_PATH if with_small_base_circle else MICRO_QR_INT_NO_BASE_TEMPLATE_PAGE_FILE_PATH
+
+    output_file_path = compose_micro_qr_int_page(
+        template_page_image_file_path=template_page_image_file_path,
         qr_image_file_paths_list=micro_qr_image_file_paths_list,
         column_count=column_count,
         row_count=row_count,
@@ -171,13 +225,24 @@ def generate_micro_qr_int_page(column_count, row_count, value_min, size):
         printable_page_image_file_path=LETTER_PAGE_300DPI_FILE_PATH
     )
 
+    print("Deleting temporary files...")
+    for qr_image_file_path in micro_qr_image_file_paths_list:
+        os.remove(qr_image_file_path)
+
+    return output_file_path
+
 
 if __name__ == "__main__":
-    # generate_micro_qr_int_page(
-    #     column_count=7,
-    #     row_count=10,
-    #     value_min=0,
-    #     size=16
-    # )
 
-    detect(dir_path=r"D:\Dev_Projects\AiWarmachine\saved\snapshot\MicroQR_PhotoUHD")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("min_value", type=int, help="MicroQR minimum value")
+    parser.add_argument("-sb", "--small_base", action="store_true", help="set to have small base circle around MicroQR")
+    args = parser.parse_args()
+
+    image_file_path = generate_micro_qr_int_page(
+        column_count=7,
+        row_count=10,
+        value_min=args.min_value,
+        size=16,
+        with_small_base_circle=args.small_base
+    )
