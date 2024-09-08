@@ -150,6 +150,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.push_camera_saturation_reset.clicked.connect(partial(self.reset_camera_slider, self.ui.slider_camera_saturation, 128))
         self.ui.slider_camera_sharpness.valueChanged.connect(partial(self.set_camera_prop_value, cv.CAP_PROP_SHARPNESS))
         self.ui.push_camera_sharpness_reset.clicked.connect(partial(self.reset_camera_slider, self.ui.slider_camera_sharpness, 128))
+        self.ui.combo_camera_fourcc.currentIndexChanged.connect(self.change_camera_fourcc)
 
         # Camera Calibration
         self.ui.push_calibration_image_top.clicked.connect(partial(self.trigger_calibration_image, "top"))
@@ -519,6 +520,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 current_camera.get_capture_property(common.get_capture_property_id("Sharpness"))
             )
 
+            fourcc = current_camera.get_capture_property(common.get_capture_property_id("FOURCC"))
+            fourcc_index = self.ui.combo_camera_fourcc.findText(constants.FOURCC_INT_TO_STR.get(fourcc, "YUY2"))
+            if fourcc_index != -1:
+                self.ui.combo_camera_fourcc.setCurrentIndex(fourcc_index)
+            else:
+                self.ui.combo_camera_fourcc.setCurrentIndex(1)
+
         self._disable_camera_settings_change = False
 
     @QtCore.pyqtSlot(str)
@@ -548,6 +556,13 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._disable_camera_settings_change:
             return
         self.core.camera_manager.set_current_camera_prop_value(property_id, value)
+
+    @QtCore.pyqtSlot(int)
+    def change_camera_fourcc(self, _):
+        """Set the camera fourcc based on current combo box text."""
+        if self._disable_camera_settings_change:
+            return
+        self.core.camera_manager.set_current_camera_fourcc(self.ui.combo_camera_fourcc.currentText())
 
     def update_current_camera_item_label(self):
         """Update the current camera item's label."""
@@ -652,6 +667,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pause_refresh_ticker()
         if replace_camera:
             current_camera.load(camera_data)
+            self.fill_current_camera_settings()
             self.start_refresh_ticker()
         else:
             # create the camera objects
