@@ -22,7 +22,7 @@ import sys
 from PyQt6 import QtWidgets, QtCore
 import cv2 as cv
 
-VERSION = "v0.0.4"  # major.minor.build
+VERSION = "v0.0.5"  # major.minor.build
 
 GITHUB_WIKI_URL = "https://github.com/madesjardins/AiWarmachine/wiki"
 
@@ -44,13 +44,13 @@ DEFAULT_CAPTURE_API = cv.CAP_V4L2 if IS_LINUX else cv.CAP_DSHOW
 
 DEFAULT_CAPTURE_WIDTH = 1920
 DEFAULT_CAPTURE_HEIGHT = 1080
-DEFAULT_FPS = 30.0
+DEFAULT_FPS = 30
 
 DEFAULT_CAPTURE_PROPERTIES_DICT = {
     cv.CAP_PROP_HW_ACCELERATION: cv.VIDEO_ACCELERATION_ANY,
     cv.CAP_PROP_FRAME_WIDTH: DEFAULT_CAPTURE_WIDTH,
     cv.CAP_PROP_FRAME_HEIGHT: DEFAULT_CAPTURE_HEIGHT,
-    cv.CAP_PROP_FPS: int(DEFAULT_FPS),
+    cv.CAP_PROP_FPS: DEFAULT_FPS,
     cv.CAP_PROP_AUTOFOCUS: 1,  # 1 = Off
     cv.CAP_PROP_FOCUS: 0,  # small = far, big = near
     cv.CAP_PROP_AUTO_EXPOSURE: 1,  # 1 = Off
@@ -85,6 +85,13 @@ CAPTURE_PROPERTIES_NAMES_DICT = {
     cv.CAP_PROP_ZOOM: "Zoom",
 }
 
+FOURCC_INT_TO_STR = {
+    1196444237: 'MJPG',
+    825307737: 'Y211',
+    825308249: 'Y411',
+    844715353: 'YUY2',
+    842094169: 'YV12',
+}
 
 CALIBRATION_VIEWS = [
     "Close up from top.",

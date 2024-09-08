@@ -144,6 +144,25 @@ class CameraManager(QtCore.QObject):
         else:
             return False
 
+    def set_current_camera_fourcc(self, fourcc):
+        """Set the current camera fourcc.
+
+        :param fourcc: FourCC as str.
+        :type fourcc: str
+
+            **Example: 'MJPG'**
+
+        :return: Whether or not this operation was possible.
+        :rtype: bool
+        """
+        if (current_camera := self.get_camera()) is not None:
+            current_camera.stop()
+            current_camera.set_capture_property(cv.CAP_PROP_FOURCC, cv.VideoWriter_fourcc(*fourcc))
+            current_camera.start()
+            return True
+        else:
+            return False
+
     def set_current_camera_name(self, name):
         """Set the current camera name.
 
