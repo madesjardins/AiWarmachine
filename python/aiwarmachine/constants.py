@@ -22,7 +22,7 @@ import sys
 from PyQt6 import QtWidgets, QtCore
 import cv2 as cv
 
-VERSION = "v0.0.4"  # major.minor.build
+VERSION = "v0.0.5"  # major.minor.build
 
 GITHUB_WIKI_URL = "https://github.com/madesjardins/AiWarmachine/wiki"
 
