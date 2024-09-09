@@ -117,6 +117,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.combo_voice_narrator.addItems(self.core.voices_list)
             self.ui.combo_voice_narrator.setCurrentIndex(0)
 
+        # Titles tab
+        self.refresh_titles_list()
+
     def _init_connections(self):
         """Initialize connections."""
         # General events
@@ -190,6 +193,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Menu
         self.github_action.triggered.connect(self.open_github)
+
+        # Titles
+        self.ui.push_titles_refresh.clicked.connect(self.refresh_titles_list)
+        self.ui.list_titles.itemSelectionChanged.connect(self.refresh_selected_title_info)
+        self.ui.push_titles_launch.clicked.connect(self.launch_title)
 
     def launch_projector_dialog(self):
         """Pop the projector dialog, connect ticker and start."""
@@ -1083,3 +1091,67 @@ class MainWindow(QtWidgets.QMainWindow):
     def stop_voice_narrator(self):
         """Stop the voice narrator."""
         self.core.narrator.stop()
+
+    # #############################################
+    #
+    # TITLES
+    #
+    # #############################################
+    def get_selected_title_name(self):
+        """Get the selected title name if any.
+
+        :return: Title name.
+        :rtype: str
+        """
+        selected_items = self.ui.list_titles.selectedItems()
+        if selected_items:
+            return selected_items[0].text()
+        else:
+            return None
+
+    @QtCore.pyqtSlot()
+    def refresh_titles_list(self):
+        """Initialize the titles."""
+        self.titles_data = self.core.get_titles_data()
+        self.ui.list_titles.clear()
+        if self.titles_data:
+            self.ui.list_titles.addItems(sorted(self.titles_data.keys()))
+        self.refresh_selected_title_info()
+
+    @QtCore.pyqtSlot()
+    def refresh_selected_title_info(self):
+        """Refresh the info text about the selected title."""
+        title_name = self.get_selected_title_name()
+        self.ui.text_titles_info.clear()
+        if title_name is not None:
+            self.ui.text_titles_info.setPlainText(self.titles_data.get(title_name, f"Info for title '{title_name}' is not Available !!"))
+
+    @QtCore.pyqtSlot()
+    def launch_title(self):
+        """Launch the selected title."""
+        title_name = self.get_selected_title_name()
+        if title_name is None:
+            common.message_box(
+                "Warning",
+                "Please select a title before pressing 'Launch' button.",
+                icon_name="Warning",
+                button_names_list=['Close']
+            )
+        else:
+            camera_is_calibrated = False
+            if camera := self.core.camera_manager.get_camera():
+                camera_is_calibrated = camera.is_calibrated()
+            game_table_is_calibrated = self.core.game_table.is_calibrated()
+
+            if camera_is_calibrated and game_table_is_calibrated:
+                self.ui.push_titles_launch.setEnabled(False)
+                self.ui.push_titles_refresh.setEnabled(False)
+                self.ui.push_titles_stop.setEnabled(True)
+                self.core.launch_title(title_name, self)
+            else:
+                common.message_box(
+                    "Warning",
+                    "Please calibrate your camera and table before launching a title.",
+                    icon_name="Warning",
+                    button_names_list=['Close']
+                )

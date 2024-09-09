@@ -179,3 +179,5 @@ ROI_MIN_X = 0
 ROI_MIN_Y = 1
 ROI_MAX_X = 2
 ROI_MAX_Y = 3
+
+INFO_TEXT_FILENAME = "info.txt"

@@ -1,0 +1,5 @@
+Title: AiWarmachine
+Author: Marc-Antoine Desjardins
+Version: 0.0.1
+Date: 2024-09-09
+Info: An AiWarmachine port for Warmachine.

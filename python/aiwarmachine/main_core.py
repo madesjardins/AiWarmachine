@@ -16,7 +16,9 @@
 #
 """Core module for the main dialog to setup camera and table."""
 
+import os
 import time
+import importlib
 
 from PyQt6 import QtCore, QtGui
 
@@ -53,6 +55,8 @@ class MainCore(QtCore.QObject):
         self.voice_recognizer = voice_recognition.VoiceRecognizer()
         self.voices_list = voice_narration.get_available_voices()
         self.narrator = voice_narration.Narrator(voice=self.voices_list[0] if self.voices_list else None)
+
+        self.current_title = None
 
         self._init_tickers()
 
@@ -226,3 +230,38 @@ class MainCore(QtCore.QObject):
         self.voice_recognizer.wait()
         self.narrator.stop()
         self.narrator.wait()
+
+    def get_titles_data(self):
+        """Get list of titles and their info.txt text.
+
+        :return: Titles and their info.
+        :rtype: dict[str: str]
+        """
+        titles_data = {}
+        titles_dirpath = os.getenv("TITLES_DIRPATH")
+        for fd_name in os.listdir(titles_dirpath):
+            fd_path = os.path.join(titles_dirpath, fd_name)
+            if os.path.isdir(fd_path):
+                info_filepath = os.path.join(fd_path, constants.INFO_TEXT_FILENAME)
+                if os.path.exists(info_filepath):
+                    with open(info_filepath, 'r') as fid:
+                        info_text = fid.read()
+                    titles_data[fd_name] = info_text
+
+        return titles_data
+
+    def launch_title(self, title_name, parent):
+        """Launch a title.
+
+        :param title_name: The name of the title.
+        :type title_name: str
+
+        :param parent: Parent widget.
+        :type parent: :class:`QWidget`
+
+        :return: The game dialog.
+        :rtype: :class:`TitleDialog`
+        """
+        title_module = importlib.import_module(title_name)
+        importlib.reload(title_module)
+        self.current_title = title_module.launch(self, parent)

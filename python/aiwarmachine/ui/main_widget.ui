@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1272</width>
+    <width>1180</width>
     <height>776</height>
    </rect>
   </property>
@@ -2956,6 +2956,138 @@
            </item>
           </layout>
          </widget>
+         <widget class="QWidget" name="tab_titles">
+          <attribute name="title">
+           <string>Titles</string>
+          </attribute>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QListWidget" name="list_titles">
+             <property name="minimumSize">
+              <size>
+               <width>256</width>
+               <height>160</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>256</width>
+               <height>160</height>
+              </size>
+             </property>
+             <property name="verticalScrollBarPolicy">
+              <enum>Qt::ScrollBarAlwaysOn</enum>
+             </property>
+             <property name="editTriggers">
+              <set>QAbstractItemView::CurrentChanged</set>
+             </property>
+             <property name="alternatingRowColors">
+              <bool>true</bool>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+             <property name="selectionRectVisible">
+              <bool>true</bool>
+             </property>
+             <property name="sortingEnabled">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QVBoxLayout" name="vbox_titles_buttons">
+             <item>
+              <widget class="QPushButton" name="push_titles_refresh">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>64</width>
+                 <height>48</height>
+                </size>
+               </property>
+               <property name="styleSheet">
+                <string notr="true"/>
+               </property>
+               <property name="text">
+                <string>Refresh</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="push_titles_launch">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>64</width>
+                 <height>48</height>
+                </size>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">background-color: rgb(192, 255, 188);
+color: rgb(0, 0, 0);</string>
+               </property>
+               <property name="text">
+                <string>Launch</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="push_titles_stop">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>64</width>
+                 <height>48</height>
+                </size>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">background-color: rgb(254, 199, 187);
+color: rgb(0, 0, 0);</string>
+               </property>
+               <property name="text">
+                <string>Stop</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QPlainTextEdit" name="text_titles_info">
+             <property name="verticalScrollBarPolicy">
+              <enum>Qt::ScrollBarAlwaysOn</enum>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
          <widget class="QWidget" name="tab_advanced">
           <attribute name="title">
            <string>Advanced</string>
@@ -3287,7 +3419,7 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>902</width>
+            <width>810</width>
             <height>466</height>
            </rect>
           </property>
@@ -3438,6 +3570,11 @@
   <tabstop>edit_voice_recognition</tabstop>
   <tabstop>combo_voice_narrator</tabstop>
   <tabstop>edit_voice_narrator</tabstop>
+  <tabstop>list_titles</tabstop>
+  <tabstop>push_titles_refresh</tabstop>
+  <tabstop>push_titles_launch</tabstop>
+  <tabstop>push_titles_stop</tabstop>
+  <tabstop>text_titles_info</tabstop>
   <tabstop>spin_viewport_refresh_rate</tabstop>
   <tabstop>double_safe_image_grab_coefficient</tabstop>
   <tabstop>spin_projector_refresh_rate</tabstop>
