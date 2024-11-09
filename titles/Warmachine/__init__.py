@@ -16,8 +16,36 @@
 #
 """Warmachine title."""
 
+from importlib import reload
 
-def launch(main_core, parent):
-    """Launch this title."""
-    print("Launch !!")
-    return None
+from PyQt6 import QtCore
+
+from . import core, dialog
+reload(core)
+reload(dialog)
+
+
+class Title(QtCore.QObject):
+    """Small class containing title core and dialog."""
+
+    def __init__(self, main_core, main_window):
+        """Initialize."""
+        super().__init__()
+        self.title_core = core.TitleCore(main_core)
+        self.title_dialog = dialog.TitleDialog(self.title_core, main_window)
+        self.title_dialog.closing.connect(main_window.title_closing)
+
+
+def launch(main_core, main_window):
+    """Launch this title.
+
+    :param main_core: The title core.
+    :type main_core: :class:`MainCore`
+
+    :param main_window: The main window.
+    :type main_window: :class:`MainWindow`
+
+    :return: Title.
+    :rtype: :class:`Title`
+    """
+    return Title(main_core, main_window)

@@ -115,7 +115,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.combo_voice_device.setCurrentIndex(0)
         if self.core.voices_list:
             self.ui.combo_voice_narrator.addItems(self.core.voices_list)
-            self.ui.combo_voice_narrator.setCurrentIndex(0)
+            try:
+                self.ui.combo_voice_narrator.setCurrentIndex(self.core.voices_list.index(constants.DEFAULT_NARRATOR_VOICE))
+            except Exception:
+                self.ui.combo_voice_narrator.setCurrentIndex(0)
+            self.set_narrator_voice()
 
         # Titles tab
         self.refresh_titles_list()
@@ -183,10 +187,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.new_debug_data.connect(self.set_debug_data)
 
         # Voice
-        self.ui.tab_widget_calibration.currentChanged.connect(self.tab_widget_changed)
-
         self.ui.combo_voice_device.currentIndexChanged.connect(self.set_voice_recognition_device_id)
-        self.ui.push_voice_recognition_test.clicked.connect(self.toggle_voice_recognition)
+        self.core.voice_recognizer.text_partial_result.connect(self.set_voice_recognition_text)
+        self.core.voice_recognizer.text_result.connect(self.set_voice_recognition_text)
 
         self.ui.combo_voice_narrator.currentIndexChanged.connect(self.set_narrator_voice)
         self.ui.push_voice_narrator_test.clicked.connect(self.add_narrator_text)
@@ -1025,41 +1028,6 @@ class MainWindow(QtWidgets.QMainWindow):
     # VOICE
     #
     # #############################################
-    @QtCore.pyqtSlot(int)
-    def stop_voice_recognition(self, _=0):
-        """Stop the voice recognition."""
-        self.core.voice_recognizer.stop()
-        self.core.voice_recognizer.wait()
-        self.ui.push_voice_recognition_test.setText('Test')
-        self.ui.edit_voice_recognition.setText("")
-        try:
-            self.core.voice_recognizer.text_partial_result.disconnect(self.set_voice_recognition_text)
-            self.core.voice_recognizer.text_result.disconnect(self.set_voice_recognition_text)
-        except Exception:
-            pass
-
-    @QtCore.pyqtSlot()
-    def toggle_voice_recognition(self):
-        """Start/stop the voice recognition."""
-        if self.core.voice_recognizer.is_running():
-            self.stop_voice_recognition()
-        else:
-            self.ui.push_voice_recognition_test.setText('Stop')
-            self.core.voice_recognizer.start()
-            self.core.voice_recognizer.text_partial_result.connect(self.set_voice_recognition_text)
-            self.core.voice_recognizer.text_result.connect(self.set_voice_recognition_text)
-
-    @QtCore.pyqtSlot(int)
-    def tab_widget_changed(self, index):
-        """Tab widget changed, if not voice stop voice recognition.
-
-        :param index: The tab index.
-        :type index: int
-        """
-        if index != VOICE_TAB_INDEX:
-            self.stop_voice_recognition()
-            self.stop_voice_narrator()
-
     @QtCore.pyqtSlot(str)
     def set_voice_recognition_text(self, text):
         """Set the voice recognizer test preview.
@@ -1072,9 +1040,14 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot(int)
     def set_voice_recognition_device_id(self, _=0):
         """Set the voice recognition device id."""
-        self.stop_voice_recognition()
         if re_result := re.match(VOICE_RECOGNITION_DEVICE_ID_REGEX, self.ui.combo_voice_device.currentText()):
+            voice_recognition_was_running = self.core.voice_recognizer.is_running()
+            if voice_recognition_was_running:
+                self.core.voice_recognizer.stop()
+                self.core.voice_recognizer.wait()
             self.core.voice_recognizer.set_device_id(int(re_result.group('device_id')))
+            if voice_recognition_was_running:
+                self.core.voice_recognizer.start()
 
     @QtCore.pyqtSlot(int)
     def set_narrator_voice(self, _=0):
@@ -1084,9 +1057,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def add_narrator_text(self):
         """Add text for narrator."""
-        self.core.narrator.speak(text=self.ui.edit_voice_narrator.text())
-        if not self.core.narrator.is_running():
-            self.core.narrator.start()
+        self.core.speak(text=self.ui.edit_voice_narrator.text())
 
     def stop_voice_narrator(self):
         """Stop the voice narrator."""
@@ -1138,20 +1109,16 @@ class MainWindow(QtWidgets.QMainWindow):
                 button_names_list=['Close']
             )
         else:
-            camera_is_calibrated = False
-            if camera := self.core.camera_manager.get_camera():
-                camera_is_calibrated = camera.is_calibrated()
-            game_table_is_calibrated = self.core.game_table.is_calibrated()
+            self.ui.push_titles_launch.setEnabled(False)
+            self.ui.push_titles_refresh.setEnabled(False)
+            self.ui.push_titles_stop.setEnabled(True)
 
-            if camera_is_calibrated and game_table_is_calibrated:
-                self.ui.push_titles_launch.setEnabled(False)
-                self.ui.push_titles_refresh.setEnabled(False)
-                self.ui.push_titles_stop.setEnabled(True)
-                self.core.launch_title(title_name, self)
-            else:
-                common.message_box(
-                    "Warning",
-                    "Please calibrate your camera and table before launching a title.",
-                    icon_name="Warning",
-                    button_names_list=['Close']
-                )
+            self.projector_dialog.disconnect_from_qr_detection()
+            self.core.launch_title(title_name, self)
+
+    @QtCore.pyqtSlot()
+    def title_closing(self) -> None:
+        """"""
+        self.ui.push_titles_launch.setEnabled(True)
+        self.ui.push_titles_refresh.setEnabled(True)
+        self.ui.push_titles_stop.setEnabled(False)

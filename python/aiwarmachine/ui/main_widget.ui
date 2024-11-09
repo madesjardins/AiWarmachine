@@ -2792,17 +2792,7 @@
           </attribute>
           <layout class="QGridLayout" name="gridLayout_5">
            <item row="1" column="0">
-            <layout class="QGridLayout" name="gridLayout_2">
-             <item row="2" column="0">
-              <widget class="QPushButton" name="push_voice_recognition_test">
-               <property name="focusPolicy">
-                <enum>Qt::NoFocus</enum>
-               </property>
-               <property name="text">
-                <string>Test</string>
-               </property>
-              </widget>
-             </item>
+            <layout class="QGridLayout" name="grid_recognition">
              <item row="1" column="1">
               <widget class="QComboBox" name="combo_voice_device">
                <property name="focusPolicy">
@@ -2854,17 +2844,33 @@
                </property>
               </widget>
              </item>
+             <item row="2" column="0">
+              <spacer name="vspacer_recognition">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+               <property name="sizeType">
+                <enum>QSizePolicy::Fixed</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>5</width>
+                 <height>23</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
             </layout>
            </item>
            <item row="1" column="1">
-            <widget class="Line" name="line">
+            <widget class="Line" name="line_voice">
              <property name="orientation">
               <enum>Qt::Vertical</enum>
              </property>
             </widget>
            </item>
            <item row="1" column="2">
-            <layout class="QGridLayout" name="gridLayout_4">
+            <layout class="QGridLayout" name="grid_narrator">
              <item row="1" column="0">
               <widget class="QLabel" name="label_voice_narrator_voice">
                <property name="text">
@@ -2929,7 +2935,7 @@
             </layout>
            </item>
            <item row="1" column="3">
-            <spacer name="horizontalSpacer_2">
+            <spacer name="hspacer_voice">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
@@ -2942,7 +2948,7 @@
             </spacer>
            </item>
            <item row="2" column="0">
-            <spacer name="verticalSpacer">
+            <spacer name="vspacer_voice">
              <property name="orientation">
               <enum>Qt::Vertical</enum>
              </property>

@@ -49,6 +49,7 @@ class ProjectorDialog(QtWidgets.QDialog):
         self._detection_overlay_needs_update = True
         self._game_qr_detection_data = None
         self._qr_detection_overlay = None
+        self._is_connected_to_qr_detection = False
 
         self._debug_overlay_needs_update = True
         self._debug_data = None
@@ -80,8 +81,19 @@ class ProjectorDialog(QtWidgets.QDialog):
         self.viewport_label.mouse_press_event.connect(partial(self.process_viewport_mouse_events, True))
         self.viewport_label.mouse_drag_event.connect(partial(self.process_viewport_mouse_events, False))
 
-        # TODO: This should be moved to a different class
-        self.core.qr_detector.new_qr_detection_data.connect(self.set_qr_detection_data)
+        self.connect_to_qr_detection()
+
+    def connect_to_qr_detection(self):
+        """Connect the qr detection signal."""
+        if not self._is_connected_to_qr_detection:
+            self._is_connected_to_qr_detection = True
+            self.core.qr_detector.new_qr_detection_data.connect(self.set_qr_detection_data)
+
+    def disconnect_from_qr_detection(self):
+        """Connect the qr detection signal."""
+        if self._is_connected_to_qr_detection:
+            self._is_connected_to_qr_detection = False
+            self.core.qr_detector.new_qr_detection_data.disconnect(self.set_qr_detection_data)
 
     @QtCore.pyqtSlot(str)
     def process_viewport_keyboard_events(self, key_text):
@@ -196,20 +208,21 @@ class ProjectorDialog(QtWidgets.QDialog):
                 image = common.composite_images(self._base_image, corners_overlay, corners_overlay_roi[constants.ROI_MIN_X], corners_overlay_roi[constants.ROI_MIN_Y])
 
         # QR Detection
-        if self._detection_overlay_needs_update and self._game_qr_detection_data is not None:
-            self._qr_detection_overlay = self.create_game_qr_detection_overlay()
-            self._detection_overlay_needs_update = False
+        if self._is_connected_to_qr_detection:
+            if self._detection_overlay_needs_update and self._game_qr_detection_data is not None:
+                self._qr_detection_overlay = self.create_game_qr_detection_overlay()
+                self._detection_overlay_needs_update = False
 
-        if self._qr_detection_overlay is not None:
-            roi = self.core.game_table.get_projector_roi()
-            if roi is not None:
-                image = common.composite_images(
-                    image,
-                    self._qr_detection_overlay,
-                    roi[constants.ROI_MIN_X],
-                    roi[constants.ROI_MIN_Y],
-                    composite_mode=QtGui.QPainter.CompositionMode.CompositionMode_Plus
-                )
+            if self._qr_detection_overlay is not None:
+                roi = self.core.game_table.get_projector_roi()
+                if roi is not None:
+                    image = common.composite_images(
+                        image,
+                        self._qr_detection_overlay,
+                        roi[constants.ROI_MIN_X],
+                        roi[constants.ROI_MIN_Y],
+                        composite_mode=QtGui.QPainter.CompositionMode.CompositionMode_Plus
+                    )
 
         # Debug
         if self._debug_overlay_needs_update and self._debug_data is not None:
@@ -253,7 +266,6 @@ class ProjectorDialog(QtWidgets.QDialog):
             self._debug_data = data
             self._debug_overlay_needs_update = True
 
-    # TODO: This should be moved to a different class as it depends of model base size.
     @QtCore.pyqtSlot(dict)
     def set_qr_detection_data(self, game_qr_detection_data):
         """Notify of new qr detection data and prepare to create new overlay."""
@@ -262,6 +274,8 @@ class ProjectorDialog(QtWidgets.QDialog):
 
     def create_game_qr_detection_overlay(self):
         """Create game overlay to composite in plus mode.
+
+        This is only called when a title is not running as the game overlay is drawned by the title.
 
         :return: QR Detection overlay.
         :rtype: :class:`QImage`

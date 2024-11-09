@@ -59,6 +59,7 @@ class MainCore(QtCore.QObject):
         self.current_title = None
 
         self._init_tickers()
+        self.voice_recognizer.start()
 
     def _init_tickers(self):
         """Initialize the different tickers."""
@@ -264,4 +265,26 @@ class MainCore(QtCore.QObject):
         """
         title_module = importlib.import_module(title_name)
         importlib.reload(title_module)
+
+        # make sure narrator and voice recognition runs
+        if not self.narrator.is_running():
+            self.narrator.start()
+        if not self.voice_recognizer.is_running():
+            self.voice_recognizer.start()
+
         self.current_title = title_module.launch(self, parent)
+
+    def speak(self, text, voice=None):
+        """Add text and voice to queue.
+
+        :param text: Text to say.
+        :type text: str
+
+        :param voice: Voice name override. (None)
+        :type voice: str
+
+            **Example: 'en_US-kristin'**
+        """
+        if not self.narrator.is_running():
+            self.narrator.start()
+        self.narrator.speak(text=text, voice=voice)
