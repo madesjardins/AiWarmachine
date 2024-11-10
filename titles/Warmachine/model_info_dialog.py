@@ -23,7 +23,7 @@ from typing import Any
 from PyQt6 import QtCore, QtWidgets, uic
 
 from . import model_info_database as midb
-from aiwarmachine import common as aiwcom, voice_recognition as aiwvr, constants as aiwconst
+from aiwarmachine import common as aiwcom, voice_recognition as aiwvr
 from importlib import reload
 reload(midb)
 
@@ -70,8 +70,6 @@ class ModelInfoDialog(QtWidgets.QDialog):
         self.ui.push_model_revert.clicked.connect(self.fill_values)
         self.ui.push_model_close.clicked.connect(self.close)
 
-        self.ui.push_model_types_edit.clicked.connect(self.edit_model_types)
-
     def closeEvent(self, a0: Any) -> None:
         """"""
         try:
@@ -112,7 +110,7 @@ class ModelInfoDialog(QtWidgets.QDialog):
 
         elif (
             self._previous_name != current_name and
-            self.model_info_database.exists(current_name, self.model_info.ityp)
+            self.model_info_database.exists(current_name, self.model_info.icat)
         ):
             aiwcom.message_box(
                 "Error",
@@ -126,47 +124,89 @@ class ModelInfoDialog(QtWidgets.QDialog):
         else:
             self.store_info()
             if self._previous_name != "" and self._previous_name != self.model_info.name:
-                self.model_info_database.remove(self._previous_name, self.model_info.ityp)
+                self.model_info_database.remove(self._previous_name, self.model_info.icat)
 
             self.model_info_database.update(self.model_info)
-
-            # prevent changes on database without a save
-            self.model_info = self.model_info.duplicate()
 
     def get_all_vocal_names(self) -> list[str]:
         """"""
         vns_widget = self.ui.list_model_vocal_names
         return [vns_widget.item(_row).text() for _row in range(vns_widget.count())]
 
-    def get_types(self) -> list[str]:
-        """"""
-        return [_t for _t in self.ui.edit_model_types.text().split(aiwconst.CSV_DELIMITER) if _t]
-
     def fill_values(self) -> None:
         """"""
         self.ui.edit_model_name.setText(self.model_info.name)
         self.ui.edit_model_short_name.setText(self.model_info.snm)
+
+        fact_index = self.ui.combo_model_faction.findText(str(self.model_info.fact))
+        if fact_index > 0:
+            self.ui.combo_model_faction.setCurrentIndex(fact_index)
+        else:
+            self.ui.combo_model_faction.setCurrentIndex(0)
+
+        btype_index = self.ui.combo_model_basic_type.findText(str(self.model_info.btyp))
+        if btype_index > 0:
+            self.ui.combo_model_basic_type.setCurrentIndex(btype_index)
+        else:
+            self.ui.combo_model_basic_type.setCurrentIndex(0)
+
         bsz_index = self.ui.combo_model_base_size.findText(str(self.model_info.bsz))
         if bsz_index > 0:
             self.ui.combo_model_base_size.setCurrentIndex(bsz_index)
         else:
             self.ui.combo_model_base_size.setCurrentIndex(0)
+
         self.ui.spin_model_cost.setValue(self.model_info.cost)
-        self.ui.spin_model_fa.setValue(self.model_info.fa)
+
+        self.ui.check_model_is_character.setCheckState(QtCore.Qt.CheckState.Checked if self.model_info.char else QtCore.Qt.CheckState.Unchecked)
+        if self.model_info.char:
+            self.ui.spin_model_fa.setValue(1)
+        else:
+            self.ui.spin_model_fa.setValue(self.model_info.fa)
+
         self.ui.list_model_vocal_names.clear()
         if self.model_info.vns:
             self.ui.list_model_vocal_names.addItems(self.model_info.vns)
-        self.ui.edit_model_types.setText(aiwconst.CSV_DELIMITER.join(self.model_info.typs))
+        self.ui.edit_model_keywords.setText(self.model_info.kws)
+
+        self.ui.spin_model_stats_spd.setValue(self.model_info.spd)
+        self.ui.spin_model_stats_aat.setValue(self.model_info.aat)
+        self.ui.spin_model_stats_mat.setValue(self.model_info.mat)
+        self.ui.spin_model_stats_rat.setValue(self.model_info.rat)
+        self.ui.spin_model_stats_def.setValue(self.model_info.def_)
+        self.ui.spin_model_stats_arm.setValue(self.model_info.arm)
+        self.ui.spin_model_stats_arc.setValue(self.model_info.arc)
+        self.ui.spin_model_stats_ctrl.setValue(self.model_info.ctrl)
+        self.ui.spin_model_stats_fury.setValue(self.model_info.fury)
+        self.ui.spin_model_stats_thr.setValue(self.model_info.thr)
 
     def store_info(self) -> None:
         """"""
+        # TODO: assert values are all good.
         self.model_info.name = self.ui.edit_model_name.text()
         self.model_info.snm = self.ui.edit_model_short_name.text()
+        self.model_info.fact = self.ui.combo_model_faction.currentText()
+        self.model_info.btyp = self.ui.combo_model_basic_type.currentText()
         self.model_info.cost = self.ui.spin_model_cost.value()
-        self.model_info.fa = self.ui.spin_model_fa.value()
+        self.model_info.char = self.ui.check_model_is_character.isChecked()
+        if self.model_info.char:
+            self.model_info.fa = 1
+        else:
+            self.model_info.fa = self.ui.spin_model_fa.value()
         self.model_info.bsz = int(self.ui.combo_model_base_size.currentText())
         self.model_info.vns = self.get_all_vocal_names()
-        self.model_info.typs = self.get_types()
+        self.model_info.kws = self.ui.edit_model_keywords.text()
+
+        self.model_info.spd = self.ui.spin_model_stats_spd.value()
+        self.model_info.aat = self.ui.spin_model_stats_aat.value()
+        self.model_info.mat = self.ui.spin_model_stats_mat.value()
+        self.model_info.rat = self.ui.spin_model_stats_rat.value()
+        self.model_info.def_ = self.ui.spin_model_stats_def.value()
+        self.model_info.arm = self.ui.spin_model_stats_arm.value()
+        self.model_info.arc = self.ui.spin_model_stats_arc.value()
+        self.model_info.ctrl = self.ui.spin_model_stats_ctrl.value()
+        self.model_info.fury = self.ui.spin_model_stats_fury.value()
+        self.model_info.thr = self.ui.spin_model_stats_thr.value()
 
     @QtCore.pyqtSlot()
     def remove_selected_vocal_names(self) -> None:
@@ -176,58 +216,3 @@ class ModelInfoDialog(QtWidgets.QDialog):
         remaining_names_list = [_name for _name in all_names_list if _name not in selected_names_list]
         self.ui.list_model_vocal_names.clear()
         self.ui.list_model_vocal_names.addItems(remaining_names_list)
-
-    @QtCore.pyqtSlot()
-    def edit_model_types(self) -> None:
-        """"""
-        edited_types = ModelInfoModelTypesDialog.prompt(types_list=self.get_types(), parent=self)
-        if edited_types is not None:
-            self.model_info.typs = edited_types
-            self.ui.edit_model_types.setText(aiwconst.CSV_DELIMITER.join(self.model_info.typs))
-
-
-class ModelInfoModelTypesDialog(QtWidgets.QDialog):
-    """"""
-
-    @staticmethod
-    def prompt(types_list: list[str], parent: ModelInfoDialog) -> list[str]:
-        """"""
-        dial = ModelInfoModelTypesDialog(types_list, parent)
-        dial.exec()
-        return dial.types_list
-
-    def __init__(self, types_list: list[str], parent: ModelInfoDialog) -> None:
-        """"""
-        super().__init__(parent, flags=QtCore.Qt.WindowType.WindowTitleHint | QtCore.Qt.WindowType.CustomizeWindowHint)
-        self._init_uit()
-        self._init_values(types_list)
-        self._init_connections()
-
-    def _init_uit(self) -> None:
-        """"""
-        self.ui = uic.loadUi(os.path.join(os.path.dirname(__file__), "ui", "model_info_model_types_widget.ui"))
-        self.setWindowTitle("Model Types")
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self.ui)
-        self.setLayout(layout)
-
-        self.types_list = None
-
-    def _init_connections(self) -> None:
-        """"""
-        self.ui.push_apply.clicked.connect(self.apply)
-        self.ui.push_cancel.clicked.connect(self.close)
-
-    def _init_values(self, types_list: list[str]) -> None:
-        """"""
-        basic_candidates_list = [e.value for e in midb.ModelInfoModelTypeBasic if e.value in types_list]
-        if basic_candidates_list:
-            self.ui.combo_basic.setCurrentIndex(self.ui.combo_basic.findText(basic_candidates_list[0]))
-
-    @QtCore.pyqtSlot()
-    def apply(self) -> None:
-        """"""
-        self.types_list = [
-            self.ui.combo_basic.currentText()
-        ]
-        self.close()

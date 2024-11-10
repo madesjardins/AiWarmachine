@@ -38,20 +38,23 @@ class MetaEnum(EnumMeta):
         return True
 
 
-class ModelInfoType(StrEnum, metaclass=MetaEnum):
-    MODEL = "M"
+class ModelInfoCategory(StrEnum, metaclass=MetaEnum):
+    INDEPENDENT = "I"
     UNIT = "U"
 
 
 class ModelInfoAttr(StrEnum, metaclass=MetaEnum):
+    INFO_CATEGORY = "icat"
     NAME = "name"
-    INFO_TYPE = "ityp"
     SHORT_NAME = "snm"
     VOCAL_NAMES = "vns"
+    FACTION = "fact"
+    BASIC_TYPE = "btyp"
     BASE_SIZE = "bsz"
     COST = "cost"
     FA = "fa"
-    TYPES = "typs"
+    IS_CHARACTER = "char"
+    KEYWORDS = "kws"
     SPD = "spd"
     AAT = "aat"
     MAT = "mat"
@@ -74,32 +77,44 @@ class ModelInfoAttr(StrEnum, metaclass=MetaEnum):
     TROOPERS = "trps"
 
 
-class ModelInfoModelTypeBasic(StrEnum, metaclass=MetaEnum):
-    GRUNT = "Grunt"
-    SOLO = "Solo"
+class ModelInfoBasicType(StrEnum, metaclass=MetaEnum):
     WARCASTER = "Warcaster"
     WARLOCK = "Warlock"
+    INFERNAL_MASTER = "Infernal Master"
     WARJACK = "Warjack"
     WARBEAST = "Warbeast"
+    MONSTROSITY = "Monstrosity"
+    HORROR = "Horror"
+    BATTLE_ENGINE = "Battle Engine"
+    STRUCTURE = "Structure"
+    SOLO = "Solo"
+    GRUNT = "Grunt"
+    TROOPER = "Trooper"
+    COMMAND_ATTACHMENT = "Command Attachment"
+    WEAPON_ATTACHMENT = "Weapon Attachment"
 
 
 @dataclass
 class ModelInfo:
     """"""
-    ityp: ModelInfoType
+    icat: ModelInfoCategory
     name: str = ""
     snm: str = ""
+    fact: str = "Mercenaries"
+    btyp: str = ModelInfoBasicType.SOLO.value
     vns: List[str] = field(default_factory=list)
     bsz: int = 30
     cost: int = -1
     fa: int = -1
-    typs: List[str] = field(default_factory=list)
+    char: bool = False
+    kws: str = ""
     spd: int = -1
     aat: int = -1
     mat: int = -1
     rat: int = -1
     def_: int = -1
     arm: int = -1
+    arc: int = -1
     ctrl: int = -1
     fury: int = -1
     thr: int = -1
@@ -150,7 +165,7 @@ class ModelInfoDatabase(object):
         if not os.path.exists(constants.MODEL_INFO_DATABASE_DIR_PATH):
             os.makedirs(constants.MODEL_INFO_DATABASE_DIR_PATH)
         with open(file_path, 'w') as fid:
-            fid.write(json.dumps({ModelInfoType.MODEL: {}, ModelInfoType.UNIT: {}}))
+            fid.write(json.dumps({ModelInfoCategory.INDEPENDENT: {}, ModelInfoCategory.UNIT: {}}))
 
         return ModelInfoDatabase(file_path)
 
@@ -191,11 +206,11 @@ class ModelInfoDatabase(object):
 
     def clear(self):
         """"""
-        self._data = {ModelInfoType.MODEL: {}, ModelInfoType.UNIT: {}}
+        self._data = {ModelInfoCategory.INDEPENDENT: {}, ModelInfoCategory.UNIT: {}}
 
     def save(self):
         """"""
-        json_data = {ModelInfoType.MODEL: {}, ModelInfoType.UNIT: {}}
+        json_data = {ModelInfoCategory.INDEPENDENT: {}, ModelInfoCategory.UNIT: {}}
         for model_info_type in self._data.keys():
             for model_name, model_info in self._data[model_info_type].items():
                 json_data[model_info_type][model_name] = model_info.as_dict()
@@ -205,29 +220,29 @@ class ModelInfoDatabase(object):
 
     def update(self, model_info: ModelInfo):
         """"""
-        self._data[model_info.ityp][model_info.name] = model_info
+        self._data[model_info.icat][model_info.name] = model_info
 
-    def remove(self, name, info_type=ModelInfoType.MODEL):
+    def remove(self, name, info_category=ModelInfoCategory.INDEPENDENT):
         """"""
         try:
-            del self._data[info_type][name]
+            del self._data[info_category][name]
         except KeyError:
             return False
         return True
 
-    def remove_multi(self, names_list: list[str], info_type=ModelInfoType.MODEL) -> None:
+    def remove_multi(self, names_list: list[str], info_category=ModelInfoCategory.INDEPENDENT) -> None:
         """"""
         for name in names_list:
-            self.remove(name, info_type=info_type)
+            self.remove(name, info_category=info_category)
 
-    def get_names(self, info_type=ModelInfoType.MODEL):
+    def get_names(self, info_category=ModelInfoCategory.INDEPENDENT):
         """"""
-        return copy.deepcopy(sorted(_name for _name in self._data[info_type].keys()))
+        return copy.deepcopy(sorted(_name for _name in self._data[info_category].keys()))
 
-    def get(self, name, info_type=ModelInfoType.MODEL) -> ModelInfo:
+    def get(self, name, info_category=ModelInfoCategory.INDEPENDENT) -> ModelInfo:
         """"""
-        return self._data[info_type].get(name)
+        return self._data[info_category].get(name)
 
-    def exists(self, name: str, info_type: ModelInfoType) -> bool:
+    def exists(self, name: str, info_category: ModelInfoCategory) -> bool:
         """"""
-        return name in self._data[info_type]
+        return name in self._data[info_category]

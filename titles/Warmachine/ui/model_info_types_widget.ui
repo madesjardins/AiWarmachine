@@ -6,72 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>182</width>
-    <height>77</height>
+    <width>337</width>
+    <height>109</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
-    <layout class="QGridLayout" name="grid_form">
-     <item row="0" column="0">
-      <widget class="QLabel" name="label_basic">
-       <property name="text">
-        <string>Basic:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QComboBox" name="combo_basic">
-       <item>
-        <property name="text">
-         <string>Warcaster</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Warjack</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Warlock</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Warbeast</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Solo</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Grunt</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-     <item row="0" column="2">
-      <spacer name="hspacer_basic">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>1</width>
-         <height>10</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-    </layout>
-   </item>
    <item>
     <spacer name="vspacer_buttons">
      <property name="orientation">
@@ -119,7 +61,6 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>combo_basic</tabstop>
   <tabstop>push_apply</tabstop>
   <tabstop>push_cancel</tabstop>
  </tabstops>

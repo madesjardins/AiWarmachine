@@ -103,7 +103,7 @@ class TitleDialog(QtWidgets.QDialog):
         if (current_model_info_database := self.title_core.get_model_info_database(current_model_info_database_name)) is not None:
             if force_reload:
                 current_model_info_database.revert()
-            self.ui.list_models.addItems(current_model_info_database.get_names(midb.ModelInfoType.MODEL))
+            self.ui.list_models.addItems(current_model_info_database.get_names(midb.ModelInfoCategory.INDEPENDENT))
 
     @QtCore.pyqtSlot()
     def create_model_info_database(self):
@@ -172,7 +172,7 @@ class TitleDialog(QtWidgets.QDialog):
         """"""
         current_model_info_database_name = self.ui.combo_models_database.currentText()
         if (current_model_info_database := self.title_core.get_model_info_database(current_model_info_database_name)) is not None:
-            new_model_info = midb.ModelInfo(ityp=midb.ModelInfoType.MODEL)
+            new_model_info = midb.ModelInfo(icat=midb.ModelInfoCategory.INDEPENDENT)
             model_dial = model_info_dialog.ModelInfoDialog(
                 voice_recognizer=self.title_core.main_core.voice_recognizer,
                 model_info_database=current_model_info_database,
@@ -199,7 +199,7 @@ class TitleDialog(QtWidgets.QDialog):
                 )
                 return
             model_name = selected_model_names_list[0]
-            model_info = current_model_info_database.get(model_name, info_type=midb.ModelInfoType.MODEL)
+            model_info = current_model_info_database.get(model_name, info_category=midb.ModelInfoCategory.INDEPENDENT)
             model_dial = model_info_dialog.ModelInfoDialog(
                 voice_recognizer=self.title_core.main_core.voice_recognizer,
                 model_info_database=current_model_info_database,

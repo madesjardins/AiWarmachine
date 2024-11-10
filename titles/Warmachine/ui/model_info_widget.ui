@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>540</width>
-    <height>509</height>
+    <width>600</width>
+    <height>577</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -28,14 +28,24 @@
          </property>
         </widget>
        </item>
-       <item row="2" column="0">
+       <item row="4" column="0">
         <widget class="QLabel" name="label_model_base_size">
          <property name="text">
           <string>Base Size:</string>
          </property>
         </widget>
        </item>
-       <item row="2" column="1">
+       <item row="0" column="1">
+        <widget class="QLineEdit" name="edit_model_name">
+         <property name="minimumSize">
+          <size>
+           <width>160</width>
+           <height>0</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
         <widget class="QComboBox" name="combo_model_base_size">
          <property name="layoutDirection">
           <enum>Qt::LeftToRight</enum>
@@ -67,12 +77,6 @@
          </item>
         </widget>
        </item>
-       <item row="0" column="1">
-        <widget class="QLineEdit" name="edit_model_name"/>
-       </item>
-       <item row="1" column="1">
-        <widget class="QLineEdit" name="edit_model_short_name"/>
-       </item>
        <item row="0" column="0">
         <widget class="QLabel" name="label_model_name">
          <property name="text">
@@ -83,37 +87,10 @@
          </property>
         </widget>
        </item>
-       <item row="3" column="0">
-        <widget class="QLabel" name="label_model_cost">
-         <property name="text">
-          <string>Cost:</string>
-         </property>
-        </widget>
+       <item row="1" column="1">
+        <widget class="QLineEdit" name="edit_model_short_name"/>
        </item>
-       <item row="3" column="1">
-        <widget class="QSpinBox" name="spin_model_cost">
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-         <property name="buttonSymbols">
-          <enum>QAbstractSpinBox::NoButtons</enum>
-         </property>
-         <property name="minimum">
-          <number>-1</number>
-         </property>
-         <property name="value">
-          <number>-1</number>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="0">
-        <widget class="QLabel" name="label_model_fa">
-         <property name="text">
-          <string>FA:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="1">
+       <item row="7" column="1">
         <widget class="QSpinBox" name="spin_model_fa">
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -129,11 +106,246 @@
          </property>
         </widget>
        </item>
+       <item row="5" column="1">
+        <widget class="QSpinBox" name="spin_model_cost">
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+         <property name="buttonSymbols">
+          <enum>QAbstractSpinBox::NoButtons</enum>
+         </property>
+         <property name="minimum">
+          <number>-1</number>
+         </property>
+         <property name="value">
+          <number>-1</number>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="0">
+        <widget class="QLabel" name="label_model_fa">
+         <property name="text">
+          <string>FA:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="label_model_cost">
+         <property name="text">
+          <string>Cost:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="1">
+        <widget class="QCheckBox" name="check_model_is_character">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_model_faction">
+         <property name="text">
+          <string>Faction:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QComboBox" name="combo_model_basic_type">
+         <property name="currentIndex">
+          <number>9</number>
+         </property>
+         <item>
+          <property name="text">
+           <string>Warcaster</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Warlock</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Infernal Master</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Warjack</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Warbeast</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Monstrosity</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Horror</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Battle Engine</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Structure</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Solo</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Grunt</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Trooper</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Command Attachment</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Weapon Attachment</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QComboBox" name="combo_model_faction">
+         <property name="currentIndex">
+          <number>11</number>
+         </property>
+         <property name="sizeAdjustPolicy">
+          <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
+         </property>
+         <item>
+          <property name="text">
+           <string>Circle Orboros</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Convergence of Cyriss</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Crucible Guard</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Cryx</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Cygnar</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Dusk</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Grymkin</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Infernals</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Khador</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Khymaera</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Legion of Everblight</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Mercenaries</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Orgoth</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Protectorate of Menoth</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Retribution of Scyrah</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Skorne</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Southern Kriels</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Trollbloods</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_model_basic_type">
+         <property name="text">
+          <string>Basic Type:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="label_model_is_character">
+         <property name="text">
+          <string>Is Character:</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="hbox_model_vocal_names">
-       <item>
+      <layout class="QGridLayout" name="grid_model_vocal_names">
+       <item row="0" column="0">
         <widget class="QLabel" name="label_model_vocal_names">
          <property name="text">
           <string>Vocal Names:</string>
@@ -143,10 +355,10 @@
          </property>
         </widget>
        </item>
-       <item>
+       <item row="0" column="1">
         <widget class="QListWidget" name="list_model_vocal_names"/>
        </item>
-       <item>
+       <item row="0" column="2">
         <layout class="QVBoxLayout" name="vbox_model_vocal_names">
          <item>
           <widget class="QPushButton" name="push_model_vocal_names_add">
@@ -168,6 +380,22 @@
            </property>
           </widget>
          </item>
+         <item>
+          <spacer name="verticalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::MinimumExpanding</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>10</width>
+             <height>1</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
         </layout>
        </item>
       </layout>
@@ -179,30 +407,20 @@
      <item>
       <widget class="QLabel" name="label_model_types">
        <property name="text">
-        <string>Types:</string>
+        <string>Armies and Keywords:</string>
        </property>
        <property name="alignment">
-        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="edit_model_types">
+      <widget class="QLineEdit" name="edit_model_keywords">
        <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="readOnly">
         <bool>true</bool>
        </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="push_model_types_edit">
-       <property name="focusPolicy">
-        <enum>Qt::NoFocus</enum>
-       </property>
-       <property name="text">
-        <string>Edit</string>
+       <property name="readOnly">
+        <bool>false</bool>
        </property>
       </widget>
      </item>
@@ -294,7 +512,7 @@
           </widget>
          </item>
          <item row="1" column="9">
-          <widget class="QSpinBox" name="spin_model_stats_tgr">
+          <widget class="QSpinBox" name="spin_model_stats_thr">
            <property name="alignment">
             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
            </property>
@@ -507,7 +725,7 @@
        <item>
         <widget class="QTabWidget" name="tab_model">
          <property name="currentIndex">
-          <number>0</number>
+          <number>3</number>
          </property>
          <widget class="QWidget" name="tab_model_stats_special">
           <attribute name="title">
@@ -1055,14 +1273,14 @@
  <tabstops>
   <tabstop>edit_model_name</tabstop>
   <tabstop>edit_model_short_name</tabstop>
+  <tabstop>combo_model_faction</tabstop>
+  <tabstop>combo_model_basic_type</tabstop>
   <tabstop>combo_model_base_size</tabstop>
   <tabstop>spin_model_cost</tabstop>
+  <tabstop>check_model_is_character</tabstop>
   <tabstop>spin_model_fa</tabstop>
   <tabstop>list_model_vocal_names</tabstop>
-  <tabstop>push_model_vocal_names_add</tabstop>
-  <tabstop>push_model_vocal_names_remove</tabstop>
-  <tabstop>edit_model_types</tabstop>
-  <tabstop>push_model_types_edit</tabstop>
+  <tabstop>edit_model_keywords</tabstop>
   <tabstop>spin_model_stats_spd</tabstop>
   <tabstop>spin_model_stats_aat</tabstop>
   <tabstop>spin_model_stats_mat</tabstop>
@@ -1072,36 +1290,20 @@
   <tabstop>spin_model_stats_arc</tabstop>
   <tabstop>spin_model_stats_ctrl</tabstop>
   <tabstop>spin_model_stats_fury</tabstop>
-  <tabstop>spin_model_stats_tgr</tabstop>
+  <tabstop>spin_model_stats_thr</tabstop>
   <tabstop>tab_model</tabstop>
-  <tabstop>push_model_advantages_add</tabstop>
-  <tabstop>push_model_advantages_remove</tabstop>
   <tabstop>list_model_advantages</tabstop>
-  <tabstop>push_model_resistances_add</tabstop>
-  <tabstop>push_model_resistances_remove</tabstop>
   <tabstop>list_model_resistances</tabstop>
-  <tabstop>push_model_special_add</tabstop>
-  <tabstop>push_model_special_remove</tabstop>
   <tabstop>list_model_special</tabstop>
   <tabstop>combo_model_feat</tabstop>
   <tabstop>spin_model_health</tabstop>
   <tabstop>text_model_grid</tabstop>
-  <tabstop>push_model_grid_edit</tabstop>
-  <tabstop>push_model_spells_add</tabstop>
-  <tabstop>push_model_spells_remove</tabstop>
   <tabstop>list_model_spells</tabstop>
   <tabstop>spin_model_rack_slots</tabstop>
-  <tabstop>push_model_weapons_add</tabstop>
-  <tabstop>push_model_weapons_remove</tabstop>
   <tabstop>list_model_weapons</tabstop>
-  <tabstop>push_model_hardpoints_add</tabstop>
-  <tabstop>push_model_hardpoints_remove</tabstop>
   <tabstop>list_model_hardpoints</tabstop>
   <tabstop>edit_model_troopers</tabstop>
   <tabstop>push_model_troopers_edit</tabstop>
-  <tabstop>push_model_close</tabstop>
-  <tabstop>push_model_save</tabstop>
-  <tabstop>push_model_revert</tabstop>
  </tabstops>
  <resources/>
  <connections/>
