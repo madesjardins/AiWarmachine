@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>257</width>
-    <height>285</height>
+    <width>350</width>
+    <height>366</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,6 +25,32 @@
      </item>
      <item>
       <widget class="QLineEdit" name="edit_weapon_name"/>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_weapon_quantity">
+       <property name="text">
+        <string>Quantity:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="spin_weapon_qty">
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="buttonSymbols">
+        <enum>QAbstractSpinBox::NoButtons</enum>
+       </property>
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>2</number>
+       </property>
+       <property name="value">
+        <number>1</number>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QLabel" name="label_weapon_type">
@@ -46,6 +72,63 @@
         </property>
        </item>
       </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QGridLayout" name="grid_model_vocal_names">
+     <item row="0" column="0">
+      <widget class="QLabel" name="label_weapon_vocal_names">
+       <property name="text">
+        <string>Vocal Names:</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QListWidget" name="list_weapon_vocal_names"/>
+     </item>
+     <item row="0" column="2">
+      <layout class="QVBoxLayout" name="vbox_model_vocal_names">
+       <item>
+        <widget class="QPushButton" name="push_weapon_vocal_names_add">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="text">
+          <string>Add</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="push_weapon_vocal_names_remove">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="text">
+          <string>Remove</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::MinimumExpanding</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>10</width>
+           <height>1</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>
@@ -169,7 +252,7 @@
         <number>1</number>
        </property>
        <property name="maximum">
-        <double>5.000000000000000</double>
+        <double>20.000000000000000</double>
        </property>
        <property name="singleStep">
         <double>0.500000000000000</double>

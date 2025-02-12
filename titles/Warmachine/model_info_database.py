@@ -21,7 +21,7 @@ import json
 import copy
 from enum import StrEnum, EnumMeta
 import shutil
-from typing import Self, List, Dict
+from typing import Self, List
 from dataclasses import dataclass, field, asdict
 
 from . import constants
@@ -94,6 +94,86 @@ class ModelInfoBasicType(StrEnum, metaclass=MetaEnum):
     WEAPON_ATTACHMENT = "Weapon Attachment"
 
 
+class WeaponType(StrEnum, metaclass=MetaEnum):
+    MELEE = "Melee"
+    RANGE = "Range"
+
+
+class HealthType(StrEnum, metaclass=MetaEnum):
+    VALUE = "Value"
+    GRID = "Grid"
+    SPIRAL = "Spiral"
+    CIRCLES = "Circles"
+
+
+@dataclass
+class WeaponInfo:
+    """"""
+    typ: WeaponType = WeaponType.MELEE
+    name: str = ""
+    vns: List[str] = field(default_factory=list)
+    qty: int = 1
+    rng: float = 0.5
+    spray: bool = False
+    rof: int = -1
+    aoe: int = -1
+    pow: int = -1
+    advs: List[str] = field(default_factory=list)
+    srls: List[str] = field(default_factory=list)
+
+    @staticmethod
+    def from_dict(info: dict) -> Self:
+        """"""
+        model_info = WeaponInfo(**copy.deepcopy(info))
+        return model_info
+
+    def duplicate(self) -> Self:
+        """"""
+        new_obj = WeaponInfo(**self.as_dict())
+        return new_obj
+
+    def update(self, info: dict) -> None:
+        """"""
+        for attr, value in copy.deepcopy(info).items():
+            if hasattr(self, attr):
+                setattr(self, attr, value)
+
+    def as_dict(self) -> dict:
+        """"""
+        return copy.deepcopy(asdict(self))
+
+
+@dataclass
+class HealthInfo:
+    """"""
+    typ: HealthType = HealthType.VALUE
+    value: int = 1
+    grid: List = field(default_factory=list)
+    spiral: List = field(default_factory=list)
+    circles: List[int] = field(default_factory=list)
+
+    @staticmethod
+    def from_dict(info: dict) -> Self:
+        """"""
+        model_info = HealthInfo(**copy.deepcopy(info))
+        return model_info
+
+    def duplicate(self) -> Self:
+        """"""
+        new_obj = HealthInfo(**self.as_dict())
+        return new_obj
+
+    def update(self, info: dict) -> None:
+        """"""
+        for attr, value in copy.deepcopy(info).items():
+            if hasattr(self, attr):
+                setattr(self, attr, value)
+
+    def as_dict(self) -> dict:
+        """"""
+        return copy.deepcopy(asdict(self))
+
+
 @dataclass
 class ModelInfo:
     """"""
@@ -122,10 +202,10 @@ class ModelInfo:
     res: List[str] = field(default_factory=list)
     srls: List[str] = field(default_factory=list)
     feat: str = ""
-    hp: Dict[str, str] = field(default_factory=dict)
+    hp: HealthInfo = field(default_factory=HealthInfo)
     spls: List[str] = field(default_factory=list)
     slts: List[str] = field(default_factory=list)
-    wpns: List[str] = field(default_factory=list)
+    wpns: List[WeaponInfo] = field(default_factory=list)
     hrds: List[str] = field(default_factory=list)
     trps: List[str] = field(default_factory=list)
 
@@ -133,6 +213,8 @@ class ModelInfo:
     def from_dict(info: dict) -> Self:
         """"""
         model_info = ModelInfo(**copy.deepcopy(info))
+        model_info.wpns = [WeaponInfo.from_dict(_wpn_dict) for _wpn_dict in model_info.wpns]
+        model_info.hp = HealthInfo.from_dict(model_info.hp)
         return model_info
 
     def duplicate(self) -> Self:
@@ -145,11 +227,44 @@ class ModelInfo:
         """"""
         for attr, value in copy.deepcopy(info).items():
             if hasattr(self, attr):
-                setattr(self, attr, value)
+                if attr == "wpns":
+                    self.wpns = [WeaponInfo.from_dict(_wpn_dict) for _wpn_dict in value]
+                else:
+                    setattr(self, attr, value)
 
     def as_dict(self) -> dict:
         """"""
-        return copy.deepcopy(asdict(self))
+        orig_weapons_list = self.wpns
+        self.wpns = [_wpn.as_dict() for _wpn in orig_weapons_list]
+        data = copy.deepcopy(asdict(self))
+        self.wpns = orig_weapons_list
+        return data
+
+    def weapon_exists(self, weapon_name: str) -> bool:
+        """"""
+        return any([_wn for _wn in self.wpns if _wn.name == weapon_name])
+
+    def remove_weapon(self, weapon_name: str) -> None:
+        """"""
+        if weapon_index_candidates_list := [_index for _index, _wn in enumerate(self.wpns) if _wn.name == weapon_name]:
+            del self.wpns[weapon_index_candidates_list[0]]
+
+    def add_weapon(self, weapon_info: WeaponInfo) -> None:
+        """"""
+        if not weapon_info.name.strip():
+            raise ValueError("Unable to add weapon with empty name.")
+
+        if self.weapon_exists(weapon_info.name):
+            raise ValueError(f"Unable to add weapon '{weapon_info.name}', name already exists.")
+
+        self.wpns.append(weapon_info)
+
+    def update_weapon(self, weapon_info: WeaponInfo) -> None:
+        """"""
+        if self.weapon_exists(weapon_info.name):
+            self.remove_weapon(weapon_info.name)
+
+        self.add_weapon(weapon_info)
 
 
 class ModelInfoDatabase(object):

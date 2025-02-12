@@ -1101,6 +1101,16 @@
                 </widget>
                </item>
                <item>
+                <widget class="QPushButton" name="push_model_weapons_edit">
+                 <property name="focusPolicy">
+                  <enum>Qt::NoFocus</enum>
+                 </property>
+                 <property name="text">
+                  <string>Edit</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
                 <widget class="QPushButton" name="push_model_weapons_remove">
                  <property name="focusPolicy">
                   <enum>Qt::NoFocus</enum>
