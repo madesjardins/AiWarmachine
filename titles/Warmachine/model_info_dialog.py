@@ -19,7 +19,6 @@
 import os
 import traceback
 from typing import Any
-import re
 
 from PyQt6 import QtCore, QtWidgets, uic
 
