@@ -155,8 +155,10 @@ class WeaponInfoDialog(QtWidgets.QDialog):
         self.ui.double_weapon_rng.setValue(self.weapon_info.rng)
         self.ui.check_weapon_is_spray.setCheckState(QtCore.Qt.CheckState.Checked if self.weapon_info.spray else QtCore.Qt.CheckState.Unchecked)
         self.ui.spin_weapon_rof.setValue(self.weapon_info.rof)
+        self.ui.spin_weapon_rofd3.setValue(self.weapon_info.rofd3)
         self.ui.spin_weapon_aoe.setValue(self.weapon_info.aoe)
         self.ui.spin_weapon_pow.setValue(self.weapon_info.pow)
+        self.ui.spin_weapon_blast.setValue(self.weapon_info.blast)
 
         # TODO: advantages and special rules
 
@@ -171,8 +173,10 @@ class WeaponInfoDialog(QtWidgets.QDialog):
         self.weapon_info.rng = self.ui.double_weapon_rng.value()
         self.weapon_info.spray = self.ui.check_weapon_is_spray.isChecked()
         self.weapon_info.rof = self.ui.spin_weapon_rof.value()
+        self.weapon_info.rofd3 = self.ui.spin_weapon_rofd3.value()
         self.weapon_info.aoe = self.ui.spin_weapon_aoe.value()
         self.weapon_info.pow = self.ui.spin_weapon_pow.value()
+        self.weapon_info.blast = self.ui.spin_weapon_blast.value()
 
     @QtCore.pyqtSlot()
     def remove_selected_vocal_names(self) -> None:

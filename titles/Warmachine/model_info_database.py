@@ -116,13 +116,15 @@ class WeaponInfo:
     rng: float = 0.5
     spray: bool = False
     rof: int = -1
+    rofd3: int = 0
     aoe: int = -1
     pow: int = -1
+    blast: int = -1
     advs: List[str] = field(default_factory=list)
     srls: List[str] = field(default_factory=list)
 
     @staticmethod
-    def from_dict(info: dict) -> Self:
+    def from_dict(info: dict) -> 'WeaponInfo':
         """"""
         model_info = WeaponInfo(**copy.deepcopy(info))
         return model_info
@@ -142,6 +144,23 @@ class WeaponInfo:
         """"""
         return copy.deepcopy(asdict(self))
 
+    def get_detailed_text(self) -> str:
+        """"""
+        rng = int(self.rng) if int(self.rng) == self.rng else self.rng
+        if self.typ == WeaponType.MELEE:
+            stats_str = f"RNG={self.rng}, POW={self.pow}"
+        else:
+            if self.spray:
+                rng_str = f"SP{rng}"
+            else:
+                rng_str = str(rng)
+            if self.aoe > 0:
+                stats_str = f"RNG={rng_str}, ROF={self.rof}, AOE={self.aoe}, POW={self.pow}/{self.blast}"
+            else:
+                stats_str = f"RNG={rng_str}, ROF={self.rof}, POW={self.pow}"
+
+        return f"{self.name}  {f'( x{self.qty} )  ' if self.qty > 1 else ''}[{self.typ}: {stats_str}]"
+
 
 @dataclass
 class HealthInfo:
@@ -153,7 +172,7 @@ class HealthInfo:
     circles: List[int] = field(default_factory=list)
 
     @staticmethod
-    def from_dict(info: dict) -> Self:
+    def from_dict(info: dict) -> 'HealthInfo':
         """"""
         model_info = HealthInfo(**copy.deepcopy(info))
         return model_info
@@ -210,7 +229,7 @@ class ModelInfo:
     trps: List[str] = field(default_factory=list)
 
     @staticmethod
-    def from_dict(info: dict) -> Self:
+    def from_dict(info: dict) -> 'ModelInfo':
         """"""
         model_info = ModelInfo(**copy.deepcopy(info))
         model_info.wpns = [WeaponInfo.from_dict(_wpn_dict) for _wpn_dict in model_info.wpns]
@@ -271,7 +290,7 @@ class ModelInfoDatabase(object):
     """Model info database class."""
 
     @staticmethod
-    def create_new(name):
+    def create_new(name: str) -> 'ModelInfoDatabase':
         """"""
         file_path = f"{constants.MODEL_INFO_DATABASE_DIR_PATH}/{name}.json"
         if os.path.exists(file_path):
@@ -285,7 +304,7 @@ class ModelInfoDatabase(object):
         return ModelInfoDatabase(file_path)
 
     @staticmethod
-    def duplicate(orig_name, dup_name):
+    def duplicate(orig_name: str, dup_name: str) -> 'ModelInfoDatabase':
         """"""
         orig_file_path = f"{constants.MODEL_INFO_DATABASE_DIR_PATH}/{orig_name}.json"
         if not os.path.exists(orig_file_path):

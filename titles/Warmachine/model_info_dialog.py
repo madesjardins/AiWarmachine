@@ -19,6 +19,7 @@
 import os
 import traceback
 from typing import Any
+import re
 
 from PyQt6 import QtCore, QtWidgets, uic
 
@@ -250,7 +251,7 @@ class ModelInfoDialog(QtWidgets.QDialog):
 
     def fill_weapons(self) -> None:
         """"""
-        all_names_list = [_wpn.name for _wpn in self._working_model_info.wpns]
+        all_names_list = [_wpn.get_detailed_text() for _wpn in self._working_model_info.wpns]
         self.ui.list_model_weapons.clear()
         self.ui.list_model_weapons.addItems(all_names_list)
 
@@ -269,7 +270,7 @@ class ModelInfoDialog(QtWidgets.QDialog):
 
     def get_selected_weapon_names(self) -> list[str]:
         """"""
-        return [_item.text().split(",")[0].strip() for _item in self.ui.list_model_weapons.selectedItems()]
+        return [_item.text().split("[")[0].split("(")[0].strip() for _item in self.ui.list_model_weapons.selectedItems()]
 
     def get_selected_weapon_indices(self) -> list[str]:
         """"""
