@@ -19,6 +19,7 @@
 import sys
 import queue
 from ast import literal_eval
+from Levenshtein import distance  # Install with: pip install python-Levenshtein
 
 from PyQt6 import QtCore
 import sounddevice as sd
@@ -40,6 +41,20 @@ def query_devices():
             except Exception:
                 continue
     return data
+
+
+def levenshtein_similarity(s1, s2):
+    """Distance between 2 sequences."""
+    return 1 - (distance(s1, s2) / max(len(s1), len(s2)))
+
+
+def jaccard_similarity(s1, s2):
+    """Distance between 2 sequences."""
+    set1 = set(s1.lower().split())
+    set2 = set(s2.lower().split())
+    intersection = len(set1.intersection(set2))
+    union = len(set1.union(set2))
+    return intersection / union if union != 0 else 0
 
 
 class VoiceRecognizer(QtCore.QThread):

@@ -25,3 +25,8 @@ NARRATOR_INTRODUCTION = "Welcome to Warmachine. Please, customize the options an
 DATA_DIR_PATH = f"{os.path.dirname(__file__)}/data"
 
 MODEL_INFO_DATABASE_DIR_PATH = f"{DATA_DIR_PATH}/models"
+
+NARRATOR_PLAYER_ARMY_COMPOSITION = "It's time to create your army, please tell me the name of your models and place them on the table with the Q R code visible."
+NARRATOR_OPPONENT_ARMY_COMPOSITION = "It's now time to do the same with your opponent's army."
+
+MINIMUM_SIMILARITY = 0.4

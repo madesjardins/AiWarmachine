@@ -47,6 +47,7 @@ class TitleCore(QtCore.QObject):
         self.transcript_lines = []
         self.current_title_state = states.TitleState.MENU
         self._model_databases_dict = {}
+        self._current_model_database = None
 
         # voice recognizer
         self.main_core.voice_recognizer.text_result.connect(self.voice_event)
@@ -107,7 +108,10 @@ class TitleCore(QtCore.QObject):
             pass
 
         elif self.current_title_state == states.TitleState.ARMY:
-            pass
+            if event_type == events.EventType.VOICE:
+                text = event_data.lower().strip(".")
+                model_name, info_category, similarity = self._current_model_database.find_model_from_text(text)
+                print(f"[DEBUG] {model_name} ->  {similarity} ({text})")
 
     def fetch_available_model_databases(self) -> None:
         """Fetch and load models databases."""
@@ -139,3 +143,9 @@ class TitleCore(QtCore.QObject):
     def get_model_info_database(self, name: str) -> midb.ModelInfoDatabase:
         """"""
         return self._model_databases_dict.get(name)
+
+    def start_game(self, model_info_database_name):
+        """"""
+        self._current_model_database = self._model_databases_dict[model_info_database_name]
+        self.speak(constants.NARRATOR_PLAYER_ARMY_COMPOSITION)
+        self.current_title_state = states.TitleState.ARMY

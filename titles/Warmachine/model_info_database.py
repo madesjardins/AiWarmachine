@@ -25,6 +25,7 @@ from typing import Self, List
 from dataclasses import dataclass, field, asdict
 
 from . import constants
+from aiwarmachine.voice_recognition import levenshtein_similarity, jaccard_similarity
 from importlib import reload
 reload(constants)
 
@@ -285,6 +286,21 @@ class ModelInfo:
 
         self.add_weapon(weapon_info)
 
+    def similarity_to_text(self, text):
+        """"""
+        voice_names_list = self.vns
+        if not voice_names_list:
+            voice_names_list = [self.name]
+
+        best_value = None
+
+        for voice_name in voice_names_list:
+            similarity = (jaccard_similarity(voice_name, text) + levenshtein_similarity(voice_name, text)) / 2.0
+            if best_value is None or similarity > best_value:
+                best_value = similarity
+
+        return best_value
+
 
 class ModelInfoDatabase(object):
     """Model info database class."""
@@ -380,3 +396,27 @@ class ModelInfoDatabase(object):
     def exists(self, name: str, info_category: ModelInfoCategory) -> bool:
         """"""
         return name in self._data[info_category]
+
+    def find_model_from_text(self, text, info_category=None):
+        """"""
+        if info_category is None:
+            info_categories_list = [ModelInfoCategory.INDEPENDENT, ModelInfoCategory.UNIT]
+        else:
+            info_categories_list = [info_category]
+
+        best_model_name = None
+        best_category = None
+        best_similarity = None
+
+        for info_cat_i in info_categories_list:
+            for model_name, model_info in self._data[info_cat_i].items():
+                similarity = model_info.similarity_to_text(text)
+                if best_similarity is None or similarity > best_similarity:
+                    best_similarity = similarity
+                    best_model_name = model_name
+                    best_category = info_cat_i
+
+        if best_similarity is None or best_similarity < constants.MINIMUM_SIMILARITY:
+            return None, None, None
+
+        return best_model_name, best_category, best_similarity

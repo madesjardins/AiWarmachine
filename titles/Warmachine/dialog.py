@@ -72,6 +72,7 @@ class TitleDialog(QtWidgets.QDialog):
     def _init_connections(self) -> None:
         """Initialize connections."""
         self.ui.push_exit_title.clicked.connect(self.close)
+        self.ui.push_start_game.clicked.connect(self.start_game)
 
         self.ui.combo_models_database.currentIndexChanged.connect(partial(self.refresh_models, False))
         self.ui.push_models_database_new.clicked.connect(self.create_model_info_database)
@@ -144,9 +145,10 @@ class TitleDialog(QtWidgets.QDialog):
         if (current_model_info_database := self.title_core.get_model_info_database(current_model_info_database_name)) is not None:
             current_model_info_database.save()
 
-    def start(self):
+    def start_game(self):
         """Start this title."""
-        pass
+        self.title_core.start_game(model_info_database_name=self.ui.combo_models_database.currentText())
+
         # camera_is_calibrated = False
         # if camera := self.core.camera_manager.get_camera():
         #     camera_is_calibrated = camera.is_calibrated()

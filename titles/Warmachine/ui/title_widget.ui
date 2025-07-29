@@ -313,12 +313,12 @@
    <item>
     <layout class="QHBoxLayout" name="hlayout_options_buttons">
      <item>
-      <widget class="QPushButton" name="push_exit_match">
+      <widget class="QPushButton" name="push_start_game">
        <property name="focusPolicy">
         <enum>Qt::NoFocus</enum>
        </property>
        <property name="text">
-        <string>Start Ttitle</string>
+        <string>Start Game</string>
        </property>
       </widget>
      </item>
@@ -337,7 +337,7 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>push_exit_match</tabstop>
+  <tabstop>push_start_game</tabstop>
   <tabstop>push_exit_title</tabstop>
   <tabstop>combo_models_database</tabstop>
   <tabstop>push_models_database_new</tabstop>
