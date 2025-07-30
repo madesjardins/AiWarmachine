@@ -19,6 +19,7 @@
 import os
 import re
 import traceback
+from typing import Optional
 
 from PyQt6 import QtCore
 
@@ -35,6 +36,8 @@ DATABASE_COMBO_CHOOSE_TEXT = "-- Choose a database --"
 class TitleCore(QtCore.QObject):
     """Core class behind the title dialog."""
 
+    refresh_armies = QtCore.pyqtSignal()
+
     def __init__(self, main_core):
         """Initialize.
 
@@ -48,6 +51,7 @@ class TitleCore(QtCore.QObject):
         self.current_title_state = states.TitleState.MENU
         self._model_databases_dict = {}
         self._current_model_database = None
+        self._armies = [[], []]
 
         # voice recognizer
         self.main_core.voice_recognizer.text_result.connect(self.voice_event)
@@ -93,7 +97,7 @@ class TitleCore(QtCore.QObject):
         :param detection_data: The detection data.
         :type detection_data: dict
         """
-        pass
+        self.dispatch_event(events.EventType.QR, detection_data)
 
     def dispatch_event(self, event_type, event_data):
         """Dispatch event based on the current state of the title.
@@ -110,8 +114,10 @@ class TitleCore(QtCore.QObject):
         elif self.current_title_state == states.TitleState.ARMY:
             if event_type == events.EventType.VOICE:
                 text = event_data.lower().strip(".")
-                model_name, info_category, similarity = self._current_model_database.find_model_from_text(text)
-                print(f"[DEBUG] {model_name} ->  {similarity} ({text})")
+                model_info, info_category, similarity = self._current_model_database.find_model_from_text(text)
+                self.add_model_to_army(0, events.EventType.VOICE, model_info=model_info)
+            elif event_type == events.EventType.QR:
+                self.add_model_to_army(0, events.EventType.QR, qrs_list=list(event_data.keys()))
 
     def fetch_available_model_databases(self) -> None:
         """Fetch and load models databases."""
@@ -149,3 +155,32 @@ class TitleCore(QtCore.QObject):
         self._current_model_database = self._model_databases_dict[model_info_database_name]
         self.speak(constants.NARRATOR_PLAYER_ARMY_COMPOSITION)
         self.current_title_state = states.TitleState.ARMY
+
+    def add_model_to_army(self, player_index: int, event_type: events.EventType, model_info: Optional[midb.ModelInfo] = None, qrs_list: Optional[list[str]] = None):
+        """"""
+        if event_type is events.EventType.QR and not qrs_list:
+            return
+
+        army = self._armies[player_index]
+        completed_model_entry = False
+        if event_type is events.EventType.QR:
+            set_qr_list = [_qr for _modl in army if (_qr := _modl.qr) is not None]
+            new_qr_list = [_qr for _qr in qrs_list if _qr not in set_qr_list]
+            if not new_qr_list:
+                return
+            new_qr_value = new_qr_list[0]
+        else:
+            new_qr_value = None
+
+        for army_model_entry in army:
+            if event_type is events.EventType.VOICE and army_model_entry.model_info is None:
+                army_model_entry.model_info = model_info
+                completed_model_entry = True
+                break
+            elif event_type is events.EventType.QR and army_model_entry.qr is None:
+                army_model_entry.qr = new_qr_value
+                completed_model_entry = True
+                break
+        if not completed_model_entry:
+            army.append(midb.ArmyModelEntry(model_info=model_info, qr=new_qr_value))
+        self.refresh_armies.emit()

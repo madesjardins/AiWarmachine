@@ -21,7 +21,7 @@ import json
 import copy
 from enum import StrEnum, EnumMeta
 import shutil
-from typing import Self, List
+from typing import Self, List, Optional
 from dataclasses import dataclass, field, asdict
 
 from . import constants
@@ -397,14 +397,14 @@ class ModelInfoDatabase(object):
         """"""
         return name in self._data[info_category]
 
-    def find_model_from_text(self, text, info_category=None):
+    def find_model_from_text(self, text, info_category=None) -> tuple[ModelInfo, ModelInfoCategory, float]:
         """"""
         if info_category is None:
             info_categories_list = [ModelInfoCategory.INDEPENDENT, ModelInfoCategory.UNIT]
         else:
             info_categories_list = [info_category]
 
-        best_model_name = None
+        best_model = None
         best_category = None
         best_similarity = None
 
@@ -413,10 +413,17 @@ class ModelInfoDatabase(object):
                 similarity = model_info.similarity_to_text(text)
                 if best_similarity is None or similarity > best_similarity:
                     best_similarity = similarity
-                    best_model_name = model_name
+                    best_model = model_info
                     best_category = info_cat_i
 
         if best_similarity is None or best_similarity < constants.MINIMUM_SIMILARITY:
             return None, None, None
 
-        return best_model_name, best_category, best_similarity
+        return best_model, best_category, best_similarity
+
+
+@dataclass
+class ArmyModelEntry:
+
+    model_info: Optional[ModelInfo] = None
+    qr: Optional[str] = None

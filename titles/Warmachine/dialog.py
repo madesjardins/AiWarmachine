@@ -84,6 +84,8 @@ class TitleDialog(QtWidgets.QDialog):
         self.ui.push_edit_model.clicked.connect(self.edit_model)
         self.ui.push_models_delete.clicked.connect(self.remove_models)
 
+        self.title_core.refresh_armies.connect(self.refresh_armies)
+
     @QtCore.pyqtSlot()
     def close(self) -> None:
         """"""
@@ -223,3 +225,15 @@ class TitleDialog(QtWidgets.QDialog):
     def get_selected_model_names(self) -> list[str]:
         """"""
         return [_item.text() for _item in self.ui.list_models.selectedItems()]
+
+    @QtCore.pyqtSlot()
+    def refresh_armies(self):
+        """"""
+        self.ui.list_armies_player.clear()
+        for army_model_entry in self.title_core._armies[0]:
+            model_name = qr = "TBD"
+            if army_model_entry.model_info is not None:
+                model_name = f"'{army_model_entry.model_info.name}'"
+            if army_model_entry.qr is not None:
+                qr = f"'{army_model_entry.qr}'"
+            self.ui.list_armies_player.addItem(f"Name: {model_name}, QR: {qr}.")
