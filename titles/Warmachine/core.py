@@ -52,7 +52,7 @@ class TitleCore(QtCore.QObject):
         self._model_databases_dict = {}
         self._current_model_database = None
         self._armies = [[], []]
-
+        self._current_army_index = 0
         # voice recognizer
         self.main_core.voice_recognizer.text_result.connect(self.voice_event)
 
@@ -114,10 +114,15 @@ class TitleCore(QtCore.QObject):
         elif self.current_title_state == states.TitleState.ARMY:
             if event_type == events.EventType.VOICE:
                 text = event_data.lower().strip(".")
+                if text == "next army":
+                    self._current_army_index += 1
+                    self._current_army_index = self._current_army_index % len(self._armies)
+                    self.speak(f"Current army is now {'player' if self._current_army_index == 0 else 'opponent'}.")
+                    return
                 model_info, info_category, similarity = self._current_model_database.find_model_from_text(text)
-                self.add_model_to_army(0, events.EventType.VOICE, model_info=model_info)
+                self.add_model_to_army(events.EventType.VOICE, model_info=model_info)
             elif event_type == events.EventType.QR:
-                self.add_model_to_army(0, events.EventType.QR, qrs_list=list(event_data.keys()))
+                self.add_model_to_army(events.EventType.QR, qrs_list=list(event_data.keys()))
 
     def fetch_available_model_databases(self) -> None:
         """Fetch and load models databases."""
@@ -152,35 +157,39 @@ class TitleCore(QtCore.QObject):
 
     def start_game(self, model_info_database_name):
         """"""
+        self._current_army_index = 0
         self._current_model_database = self._model_databases_dict[model_info_database_name]
         self.speak(constants.NARRATOR_PLAYER_ARMY_COMPOSITION)
         self.current_title_state = states.TitleState.ARMY
+        self.main_core.qr_detector.reset()
 
-    def add_model_to_army(self, player_index: int, event_type: events.EventType, model_info: Optional[midb.ModelInfo] = None, qrs_list: Optional[list[str]] = None):
+    def add_model_to_army(self, event_type: events.EventType, model_info: Optional[midb.ModelInfo] = None, qrs_list: Optional[list[str]] = None):
         """"""
         if event_type is events.EventType.QR and not qrs_list:
             return
 
-        army = self._armies[player_index]
         completed_model_entry = False
         if event_type is events.EventType.QR:
-            set_qr_list = [_qr for _modl in army if (_qr := _modl.qr) is not None]
+            set_qr_list = []
+            for army in self._armies:
+                set_qr_list.extend([_qr for _modl in army if (_qr := _modl.qr) is not None])
             new_qr_list = [_qr for _qr in qrs_list if _qr not in set_qr_list]
             if not new_qr_list:
                 return
-            new_qr_value = new_qr_list[0]
         else:
-            new_qr_value = None
+            new_qr_list = [None]
 
-        for army_model_entry in army:
-            if event_type is events.EventType.VOICE and army_model_entry.model_info is None:
-                army_model_entry.model_info = model_info
-                completed_model_entry = True
-                break
-            elif event_type is events.EventType.QR and army_model_entry.qr is None:
-                army_model_entry.qr = new_qr_value
-                completed_model_entry = True
-                break
-        if not completed_model_entry:
-            army.append(midb.ArmyModelEntry(model_info=model_info, qr=new_qr_value))
+        army = self._armies[self._current_army_index]
+        for qr_value in new_qr_list:
+            for army_model_entry in army:
+                if event_type is events.EventType.VOICE and army_model_entry.model_info is None:
+                    army_model_entry.model_info = model_info
+                    completed_model_entry = True
+                    break
+                elif event_type is events.EventType.QR and army_model_entry.qr is None:
+                    army_model_entry.qr = qr_value
+                    completed_model_entry = True
+                    break
+            if not completed_model_entry and (qr_value is not None or model_info is not None):
+                army.append(midb.ArmyModelEntry(model_info=model_info, qr=qr_value))
         self.refresh_armies.emit()

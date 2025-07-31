@@ -230,10 +230,17 @@ class TitleDialog(QtWidgets.QDialog):
     def refresh_armies(self):
         """"""
         self.ui.list_armies_player.clear()
-        for army_model_entry in self.title_core._armies[0]:
-            model_name = qr = "TBD"
-            if army_model_entry.model_info is not None:
-                model_name = f"'{army_model_entry.model_info.name}'"
-            if army_model_entry.qr is not None:
-                qr = f"'{army_model_entry.qr}'"
-            self.ui.list_armies_player.addItem(f"Name: {model_name}, QR: {qr}.")
+        self.ui.list_armies_opponent.clear()
+        for army_index, army in enumerate(self.title_core._armies):
+            if army_index == 0:
+                list_army_widget = self.ui.list_armies_player
+            else:
+                list_army_widget = self.ui.list_armies_opponent
+
+            for army_model_entry in army:
+                model_name = qr = "TBD"
+                if army_model_entry.model_info is not None:
+                    model_name = f"'{army_model_entry.model_info.name}'"
+                if army_model_entry.qr is not None:
+                    qr = f"'{army_model_entry.qr}'"
+                list_army_widget.addItem(f"Name: {model_name}, QR: {qr}.")
