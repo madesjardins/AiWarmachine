@@ -19,7 +19,7 @@
 import os
 import re
 import traceback
-from typing import Optional
+from typing import Optional, List
 
 from PyQt6 import QtCore
 
@@ -192,4 +192,35 @@ class TitleCore(QtCore.QObject):
                     break
             if not completed_model_entry and (qr_value is not None or model_info is not None):
                 army.append(midb.ArmyModelEntry(model_info=model_info, qr=qr_value))
+        self.refresh_armies.emit()
+
+    def remove_army_model_entries(self, army_index: int, model_entry_texts_list: List[str]):
+        """"""
+        raise NotImplementedError("remove_army_model_entries is not yet implemented")
+
+    def transfer_army_model_entries(self, army_index_from: int, army_index_to: int, model_entry_texts_list: List[str]):
+        """"""
+        army_from = self._armies[army_index_from]
+        army_to = self._armies[army_index_to]
+        regex_pattern_re = re.compile("Name: (?P<model_name>[^,]+), QR: (?P<qr>[^\\.]+).")
+        for item_name in model_entry_texts_list:
+            re_result = regex_pattern_re.match(item_name)
+            if re_result:
+                model_name = re_result.group("model_name").strip("'")
+                qr = re_result.group("qr").strip("'")
+                for model_index, model_entry in enumerate(army_from):
+                    if (
+                        (
+                            model_entry.model_info is None and model_name == "TBD" or
+                            model_entry.model_info.name == model_name
+                        ) and
+                        (
+                            model_entry.qr is None and model_name == "TBD" or
+                            model_entry.qr == qr
+
+                        )
+                    ):
+                        army_from.pop(model_index)
+                        army_to.append(model_entry)
+                        break
         self.refresh_armies.emit()

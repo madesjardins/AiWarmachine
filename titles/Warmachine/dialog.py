@@ -19,6 +19,7 @@
 import os
 import traceback
 from functools import partial
+from typing import List
 
 from PyQt6 import QtCore, QtWidgets, uic
 
@@ -85,6 +86,11 @@ class TitleDialog(QtWidgets.QDialog):
         self.ui.push_models_delete.clicked.connect(self.remove_models)
 
         self.title_core.refresh_armies.connect(self.refresh_armies)
+
+        self.ui.push_armies_player_remove.clicked.connect(partial(self.remove_army_model_entries, 0))
+        self.ui.push_armies_player_transfer.clicked.connect(partial(self.transfer_army_model_entries, 0, 1))
+        self.ui.push_armies_opponent_remove.clicked.connect(partial(self.remove_army_model_entries, 1))
+        self.ui.push_armies_opponent_transfer.clicked.connect(partial(self.transfer_army_model_entries, 1, 0))
 
     @QtCore.pyqtSlot()
     def close(self) -> None:
@@ -244,3 +250,27 @@ class TitleDialog(QtWidgets.QDialog):
                 if army_model_entry.qr is not None:
                     qr = f"'{army_model_entry.qr}'"
                 list_army_widget.addItem(f"Name: {model_name}, QR: {qr}.")
+
+    def _get_selected_army_model_entry_texts(self, army_index: int) -> List[str]:
+        """"""
+        if army_index == 0:
+            list_armies_widget = self.ui.list_armies_player
+        else:
+            list_armies_widget = self.ui.list_armies_opponent
+
+        return [_item.text() for _item in list_armies_widget.selectedItems()]
+
+    @QtCore.pyqtSlot(int)
+    def remove_army_model_entries(self, army_index):
+        """"""
+        selected_item_names = self._get_selected_army_item_names(army_index)
+        if selected_item_names:
+            self.title_core.remove_army_model_entries(army_index, model_entry_texts_list=selected_item_names)
+
+    @QtCore.pyqtSlot(int, int)
+    def transfer_army_model_entries(self, army_index_from, army_index_to):
+        """"""
+        selected_item_names = self._get_selected_army_model_entry_texts(army_index_from)
+        print(selected_item_names)
+        if selected_item_names:
+            self.title_core.transfer_army_model_entries(army_index_from, army_index_to, model_entry_texts_list=selected_item_names)

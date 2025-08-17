@@ -338,7 +338,7 @@
           <bool>true</bool>
          </property>
          <property name="selectionMode">
-          <enum>QAbstractItemView::NoSelection</enum>
+          <enum>QAbstractItemView::ExtendedSelection</enum>
          </property>
          <property name="selectionBehavior">
           <enum>QAbstractItemView::SelectRows</enum>
@@ -355,10 +355,36 @@
         <layout class="QVBoxLayout" name="vbox_armies_player_buttons">
          <item>
           <widget class="QPushButton" name="push_armies_player_remove">
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
            <property name="text">
             <string>Remove</string>
            </property>
           </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="push_armies_player_transfer">
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
+           <property name="text">
+            <string>Transfer</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="vspacer_armies_player">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
          </item>
         </layout>
        </item>
@@ -380,7 +406,7 @@
           <bool>true</bool>
          </property>
          <property name="selectionMode">
-          <enum>QAbstractItemView::NoSelection</enum>
+          <enum>QAbstractItemView::ExtendedSelection</enum>
          </property>
          <property name="selectionBehavior">
           <enum>QAbstractItemView::SelectRows</enum>
@@ -397,10 +423,36 @@
         <layout class="QVBoxLayout" name="vbox_armies_opponent_buttons">
          <item>
           <widget class="QPushButton" name="push_armies_opponent_remove">
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
            <property name="text">
             <string>Remove</string>
            </property>
           </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="push_armies_opponent_transfer">
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
+           <property name="text">
+            <string>Transfer</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="vspace_armies_opponent">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
          </item>
         </layout>
        </item>
