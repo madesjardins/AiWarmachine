@@ -1262,7 +1262,7 @@
           </size>
          </property>
          <property name="currentIndex">
-          <number>5</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="tab_calibration_images">
           <attribute name="title">
@@ -3417,7 +3417,7 @@ color: rgb(0, 0, 0);</string>
              </item>
              <item>
               <property name="text">
-               <string>Half Areas</string>
+               <string>Quarters</string>
               </property>
              </item>
             </widget>
