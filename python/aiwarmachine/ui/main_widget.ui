@@ -1262,7 +1262,7 @@
           </size>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>5</number>
          </property>
          <widget class="QWidget" name="tab_calibration_images">
           <attribute name="title">
@@ -1690,7 +1690,7 @@
                     <string>mm</string>
                    </property>
                    <property name="decimals">
-                    <number>1</number>
+                    <number>2</number>
                    </property>
                    <property name="minimum">
                     <double>100.000000000000000</double>
@@ -1698,8 +1698,11 @@
                    <property name="maximum">
                     <double>9999.000000000000000</double>
                    </property>
+                   <property name="singleStep">
+                    <double>2.540000000000000</double>
+                   </property>
                    <property name="value">
-                    <double>907.500000000000000</double>
+                    <double>863.600000000000023</double>
                    </property>
                   </widget>
                  </item>
@@ -1749,7 +1752,7 @@
                     <string>mm</string>
                    </property>
                    <property name="decimals">
-                    <number>1</number>
+                    <number>2</number>
                    </property>
                    <property name="minimum">
                     <double>100.000000000000000</double>
@@ -1757,8 +1760,11 @@
                    <property name="maximum">
                     <double>9999.000000000000000</double>
                    </property>
+                   <property name="singleStep">
+                    <double>2.540000000000000</double>
+                   </property>
                    <property name="value">
-                    <double>610.500000000000000</double>
+                    <double>558.799999999999955</double>
                    </property>
                   </widget>
                  </item>
@@ -1937,7 +1943,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>100</number>
+                    <number>194</number>
                    </property>
                   </widget>
                  </item>
@@ -1977,7 +1983,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>980</number>
+                    <number>1307</number>
                    </property>
                   </widget>
                  </item>
@@ -2163,7 +2169,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>100</number>
+                    <number>199</number>
                    </property>
                   </widget>
                  </item>
@@ -2203,7 +2209,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>100</number>
+                    <number>144</number>
                    </property>
                   </widget>
                  </item>
@@ -2247,7 +2253,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>1800</number>
+                    <number>2033</number>
                    </property>
                   </widget>
                  </item>
@@ -2287,7 +2293,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>980</number>
+                    <number>1312</number>
                    </property>
                   </widget>
                  </item>
@@ -2334,7 +2340,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>100</number>
+                    <number>362</number>
                    </property>
                   </widget>
                  </item>
@@ -2374,7 +2380,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>980</number>
+                    <number>1051</number>
                    </property>
                   </widget>
                  </item>
@@ -2418,7 +2424,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>1800</number>
+                    <number>2017</number>
                    </property>
                   </widget>
                  </item>
@@ -2458,7 +2464,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>100</number>
+                    <number>118</number>
                    </property>
                   </widget>
                  </item>
@@ -2502,7 +2508,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>100</number>
+                    <number>364</number>
                    </property>
                   </widget>
                  </item>
@@ -2542,7 +2548,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>100</number>
+                    <number>84</number>
                    </property>
                   </widget>
                  </item>
@@ -2586,7 +2592,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>1800</number>
+                    <number>1866</number>
                    </property>
                   </widget>
                  </item>
@@ -2670,7 +2676,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>1800</number>
+                    <number>1847</number>
                    </property>
                   </widget>
                  </item>
@@ -2710,7 +2716,7 @@
                     <number>9999</number>
                    </property>
                    <property name="value">
-                    <number>980</number>
+                    <number>1063</number>
                    </property>
                   </widget>
                  </item>
@@ -3234,6 +3240,13 @@ color: rgb(0, 0, 0);</string>
           </attribute>
           <layout class="QGridLayout" name="gridLayout">
            <item row="1" column="3">
+            <widget class="QLabel" name="label_debug_test_position_size">
+             <property name="text">
+              <string>Size</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="4">
             <widget class="QSpinBox" name="spin_debug_test_position_size">
              <property name="focusPolicy">
               <enum>Qt::StrongFocus</enum>
@@ -3256,24 +3269,14 @@ color: rgb(0, 0, 0);</string>
             </widget>
            </item>
            <item row="1" column="2">
-            <widget class="QLabel" name="label_debug_test_position_size">
-             <property name="text">
-              <string>Size</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="push_reset_qr_detection">
-             <property name="focusPolicy">
-              <enum>Qt::NoFocus</enum>
-             </property>
-             <property name="text">
-              <string>Reset</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
             <layout class="QHBoxLayout" name="hbox_debug_test_position">
+             <item>
+              <widget class="QLabel" name="label_debug_test_position">
+               <property name="text">
+                <string>Pos</string>
+               </property>
+              </widget>
+             </item>
              <item>
               <widget class="QDoubleSpinBox" name="double_debug_test_position_x">
                <property name="focusPolicy">
@@ -3286,10 +3289,13 @@ color: rgb(0, 0, 0);</string>
                 <string>mm</string>
                </property>
                <property name="decimals">
-                <number>1</number>
+                <number>2</number>
                </property>
                <property name="maximum">
                 <double>9999.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>2.540000000000000</double>
                </property>
               </widget>
              </item>
@@ -3305,28 +3311,17 @@ color: rgb(0, 0, 0);</string>
                 <string>mm</string>
                </property>
                <property name="decimals">
-                <number>1</number>
+                <number>2</number>
                </property>
                <property name="maximum">
                 <double>9999.000000000000000</double>
                </property>
+               <property name="singleStep">
+                <double>2.540000000000000</double>
+               </property>
               </widget>
              </item>
             </layout>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_reset_qr_detection">
-             <property name="text">
-              <string>Reset Detection Data</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_debug_test_position">
-             <property name="text">
-              <string>Test Position</string>
-             </property>
-            </widget>
            </item>
            <item row="2" column="0">
             <spacer name="vspacer_debug">
@@ -3344,7 +3339,31 @@ color: rgb(0, 0, 0);</string>
              </property>
             </spacer>
            </item>
-           <item row="0" column="7">
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_debug_test">
+             <property name="text">
+              <string>Test</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_reset_qr_detection">
+             <property name="text">
+              <string>Reset Detection Data</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="7">
+            <widget class="QCheckBox" name="check_debug_test_position">
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="text">
+              <string>Active</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="8">
             <spacer name="hspacer_debug">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
@@ -3357,14 +3376,14 @@ color: rgb(0, 0, 0);</string>
              </property>
             </spacer>
            </item>
-           <item row="1" column="4">
+           <item row="1" column="5">
             <widget class="QLabel" name="label_debug_test_position_thickness">
              <property name="text">
               <string>Thickness</string>
              </property>
             </widget>
            </item>
-           <item row="1" column="5">
+           <item row="1" column="6">
             <widget class="QSpinBox" name="spin_debug_test_position_thickness">
              <property name="focusPolicy">
               <enum>Qt::StrongFocus</enum>
@@ -3386,13 +3405,30 @@ color: rgb(0, 0, 0);</string>
              </property>
             </widget>
            </item>
-           <item row="1" column="6">
-            <widget class="QCheckBox" name="check_debug_test_position">
+           <item row="1" column="1">
+            <widget class="QComboBox" name="combo_debug_test_type">
+             <property name="sizeAdjustPolicy">
+              <enum>QComboBox::AdjustToContents</enum>
+             </property>
+             <item>
+              <property name="text">
+               <string>Position</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Half Areas</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="push_reset_qr_detection">
              <property name="focusPolicy">
               <enum>Qt::NoFocus</enum>
              </property>
              <property name="text">
-              <string>Active</string>
+              <string>Reset</string>
              </property>
             </widget>
            </item>
@@ -3585,6 +3621,7 @@ color: rgb(0, 0, 0);</string>
   <tabstop>double_safe_image_grab_coefficient</tabstop>
   <tabstop>spin_projector_refresh_rate</tabstop>
   <tabstop>spin_qr_detection_rate</tabstop>
+  <tabstop>combo_debug_test_type</tabstop>
   <tabstop>double_debug_test_position_x</tabstop>
   <tabstop>double_debug_test_position_y</tabstop>
   <tabstop>spin_debug_test_position_size</tabstop>

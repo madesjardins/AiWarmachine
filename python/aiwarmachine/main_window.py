@@ -182,6 +182,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.spin_debug_test_position_size.valueChanged.connect(self.send_debug_test)
         self.ui.spin_debug_test_position_thickness.valueChanged.connect(self.send_debug_test)
         self.ui.check_debug_test_position.stateChanged.connect(self.send_debug_test)
+        self.ui.combo_debug_test_type.currentIndexChanged.connect(self.send_debug_test)
 
         self.new_debug_data.connect(self.projector_dialog.set_debug_data)
         self.new_debug_data.connect(self.set_debug_data)
@@ -274,6 +275,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 'size': self.core.game_table.convert_mm_to_pixel(self.ui.spin_debug_test_position_size.value(), ceiled=True),
                 'thickness': self.core.game_table.convert_mm_to_pixel(self.ui.spin_debug_test_position_thickness.value(), ceiled=True),
             }
+            data['test_type'] = self.ui.combo_debug_test_type.currentIndex()
 
         self.new_debug_data.emit(data)
 
@@ -884,6 +886,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.core.qr_detector.reset()
         self.core.game_table.calibrate()
         self.set_enabled_for_calibrations()
+        self._debug_overlay_needs_update = True
+        self.send_debug_test()
 
     @QtCore.pyqtSlot()
     def uncalibrate_table(self):
@@ -940,6 +944,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fill_table_settings()
         self.set_enabled_for_calibrations()
         self.core.qr_detector.reset()
+        self._debug_overlay_needs_update = True
+        self.send_debug_test()
 
     @QtCore.pyqtSlot(bool, float, float)
     def process_viewport_mouse_event(self, is_press, norm_pos_x, norm_pos_y):

@@ -466,7 +466,13 @@ class GameTable(QtCore.QObject):
             dtype=np.uint8
         )
 
-        if test_position_data := debug_data.get('test_position'):
+        test_type = debug_data.get('test_type', constants.DEBUG_TEST_TYPE_POSITION)
+        if test_type == constants.DEBUG_TEST_TYPE_QUARTERS:
+            image[0:image.shape[0] // 2, 0:image.shape[1] // 2] = (255, 0, 255)
+            image[image.shape[0] // 2:image.shape[0], 0:image.shape[1] // 2] = (255, 255, 0)
+            image[image.shape[0] // 2:image.shape[0], image.shape[1] // 2:image.shape[1]] = (0, 255, 255)
+            image[0:image.shape[0] // 2, image.shape[1] // 2:image.shape[1]] = (255, 255, 255)
+        elif test_position_data := debug_data.get('test_position'):
 
             thickness = test_position_data['thickness']
             size = test_position_data['size']
