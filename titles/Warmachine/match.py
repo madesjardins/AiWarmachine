@@ -14,20 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-"""Warmachine game title constants."""
+"""Match class."""
 
-import os
+from PyQt6 import QtCore
 
-VERSION = "v0.0.1"  # major.minor.build
 
-NARRATOR_INTRODUCTION = "Welcome to Warmachine. Please, customize the options and press the start button."
+class Match(QtCore.QObject):
+    """"""
 
-DATA_DIR_PATH = f"{os.path.dirname(__file__)}/data"
-
-MODEL_INFO_DATABASE_DIR_PATH = f"{DATA_DIR_PATH}/models"
-
-NARRATOR_PLAYER_ARMY_COMPOSITION = "It's time to create your army, please tell me the name of your models and place them on the table with the Q R code visible. Say 'next army' to create opponent army."
-NARRATOR_OPPONENT_ARMY_COMPOSITION = "It's now time to do the same with your opponent's army."
-NARRATOR_DEPLOYMENT = "It's time to deploy your army."
-
-MINIMUM_SIMILARITY = 0.4
+    def __init__(self):
+        """"""
+        pass

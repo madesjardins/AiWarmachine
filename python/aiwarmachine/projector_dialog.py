@@ -207,6 +207,21 @@ class ProjectorDialog(QtWidgets.QDialog):
             if corners_overlay is not None:
                 image = common.composite_images(self._base_image, corners_overlay, corners_overlay_roi[constants.ROI_MIN_X], corners_overlay_roi[constants.ROI_MIN_Y])
 
+        # Title Overlay (e.g., deployment zones)
+        if self.core.current_title is not None:
+            if hasattr(self.core.current_title, 'title_core') and hasattr(self.core.current_title.title_core, 'get_deployment_overlay'):
+                deployment_overlay = self.core.current_title.title_core.get_deployment_overlay()
+                if deployment_overlay is not None:
+                    roi = self.core.game_table.get_projector_roi()
+                    if roi is not None:
+                        image = common.composite_images(
+                            image,
+                            deployment_overlay,
+                            roi[constants.ROI_MIN_X],
+                            roi[constants.ROI_MIN_Y],
+                            composite_mode=QtGui.QPainter.CompositionMode.CompositionMode_Plus
+                        )
+
         # QR Detection
         if self._is_connected_to_qr_detection:
             if self._detection_overlay_needs_update and self._game_qr_detection_data is not None:

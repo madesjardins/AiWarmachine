@@ -91,6 +91,7 @@ class TitleDialog(QtWidgets.QDialog):
         self.ui.push_armies_player_transfer.clicked.connect(partial(self.transfer_army_model_entries, 0, 1))
         self.ui.push_armies_opponent_remove.clicked.connect(partial(self.remove_army_model_entries, 1))
         self.ui.push_armies_opponent_transfer.clicked.connect(partial(self.transfer_army_model_entries, 1, 0))
+        self.ui.push_armies_confirm.clicked.connect(self.confirm_armies)
 
     @QtCore.pyqtSlot()
     def close(self) -> None:
@@ -263,7 +264,7 @@ class TitleDialog(QtWidgets.QDialog):
     @QtCore.pyqtSlot(int)
     def remove_army_model_entries(self, army_index):
         """"""
-        selected_item_names = self._get_selected_army_item_names(army_index)
+        selected_item_names = self._get_selected_army_model_entry_texts(army_index)
         if selected_item_names:
             self.title_core.remove_army_model_entries(army_index, model_entry_texts_list=selected_item_names)
 
@@ -274,3 +275,8 @@ class TitleDialog(QtWidgets.QDialog):
         print(selected_item_names)
         if selected_item_names:
             self.title_core.transfer_army_model_entries(army_index_from, army_index_to, model_entry_texts_list=selected_item_names)
+
+    @QtCore.pyqtSlot()
+    def confirm_armies(self):
+        """"""
+        self.title_core.confirm_armies()

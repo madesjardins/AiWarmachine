@@ -19,16 +19,17 @@
 import os
 import re
 import traceback
-from typing import Optional, List
-
+from typing import Optional
 from PyQt6 import QtCore
 
-from . import states, events, constants, model_info_database as midb
+from . import states, events, constants, model_info_database as midb, deployment, match
 from importlib import reload
 reload(states)
 reload(events)
 reload(constants)
 reload(midb)
+reload(deployment)
+reload(match)
 
 DATABASE_COMBO_CHOOSE_TEXT = "-- Choose a database --"
 
@@ -53,6 +54,7 @@ class TitleCore(QtCore.QObject):
         self._current_model_database = None
         self._armies = [[], []]
         self._current_army_index = 0
+        self._deployment = None
         # voice recognizer
         self.main_core.voice_recognizer.text_result.connect(self.voice_event)
 
@@ -98,31 +100,6 @@ class TitleCore(QtCore.QObject):
         :type detection_data: dict
         """
         self.dispatch_event(events.EventType.QR, detection_data)
-
-    def dispatch_event(self, event_type, event_data):
-        """Dispatch event based on the current state of the title.
-
-        :param event_type: The event type.
-        :type event_type: :class:`EventType`
-
-        :param event_data: The data for this event.
-        :type event_data: object
-        """
-        if self.current_title_state == states.TitleState.MENU:
-            pass
-
-        elif self.current_title_state == states.TitleState.ARMY:
-            if event_type == events.EventType.VOICE:
-                text = event_data.lower().strip(".")
-                if text == "next army":
-                    self._current_army_index += 1
-                    self._current_army_index = self._current_army_index % len(self._armies)
-                    self.speak(f"Current army is now {'player' if self._current_army_index == 0 else 'opponent'}.")
-                    return
-                model_info, info_category, similarity = self._current_model_database.find_model_from_text(text)
-                self.add_model_to_army(events.EventType.VOICE, model_info=model_info)
-            elif event_type == events.EventType.QR:
-                self.add_model_to_army(events.EventType.QR, qrs_list=list(event_data.keys()))
 
     def fetch_available_model_databases(self) -> None:
         """Fetch and load models databases."""
@@ -194,11 +171,32 @@ class TitleCore(QtCore.QObject):
                 army.append(midb.ArmyModelEntry(model_info=model_info, qr=qr_value))
         self.refresh_armies.emit()
 
-    def remove_army_model_entries(self, army_index: int, model_entry_texts_list: List[str]):
+    def remove_army_model_entries(self, army_index: int, model_entry_texts_list: list[str]):
         """"""
-        raise NotImplementedError("remove_army_model_entries is not yet implemented")
+        army = self._armies[army_index]
+        regex_pattern_re = re.compile("Name: (?P<model_name>[^,]+), QR: (?P<qr>[^\\.]+).")
+        for item_name in model_entry_texts_list:
+            re_result = regex_pattern_re.match(item_name)
+            if re_result:
+                model_name = re_result.group("model_name").strip("'")
+                qr = re_result.group("qr").strip("'")
+                for model_index, model_entry in enumerate(army):
+                    if (
+                        (
+                            model_entry.model_info is None and model_name == "TBD" or
+                            model_entry.model_info.name == model_name
+                        ) and
+                        (
+                            model_entry.qr is None and qr == "TBD" or
+                            model_entry.qr == qr
+                        )
+                    ):
+                        army.pop(model_index)
+                        self.main_core.qr_detector.remove_qr(model_entry.qr)
+                        break
+        self.refresh_armies.emit()
 
-    def transfer_army_model_entries(self, army_index_from: int, army_index_to: int, model_entry_texts_list: List[str]):
+    def transfer_army_model_entries(self, army_index_from: int, army_index_to: int, model_entry_texts_list: list[str]):
         """"""
         army_from = self._armies[army_index_from]
         army_to = self._armies[army_index_to]
@@ -215,7 +213,7 @@ class TitleCore(QtCore.QObject):
                             model_entry.model_info.name == model_name
                         ) and
                         (
-                            model_entry.qr is None and model_name == "TBD" or
+                            model_entry.qr is None and qr == "TBD" or
                             model_entry.qr == qr
 
                         )
@@ -224,3 +222,73 @@ class TitleCore(QtCore.QObject):
                         army_to.append(model_entry)
                         break
         self.refresh_armies.emit()
+
+    def confirm_armies(self):
+        """Confirm the armies."""
+        if self.current_title_state == states.TitleState.ARMY:
+            self.current_title_state = states.TitleState.DEPLOYMENT
+            self._start_deployment()
+
+    def _start_deployment(self):
+        """Start the deployment phase."""
+        self._deployment = deployment.Deployment(self)
+        self._deployment.deployment_completed.connect(self._deployment_completed)
+
+    def _deployment_completed(self):
+        """Handle deployment completion."""
+        self.current_title_state = states.TitleState.MATCH
+        self._deployment = None  # Clear the deployment overlay
+        self.speak("The match begins now.")
+        self._start_match()
+
+    def _start_match(self):
+        """Start the match."""
+        self._match = match.Match(self)
+
+    def get_deployment_overlay(self):
+        """Get the current deployment overlay.
+
+        :return: The deployment overlay or None.
+        :rtype: :class:`QImage` or None
+        """
+        if self._deployment is not None:
+            return self._deployment.get_overlay()
+        return None
+
+    def dispatch_event(self, event_type, event_data):
+        """Dispatch event based on the current state of the title.
+
+        :param event_type: The event type.
+        :type event_type: :class:`EventType`
+
+        :param event_data: The data for this event.
+        :type event_data: object
+        """
+        if self.current_title_state == states.TitleState.MENU:
+            pass
+
+        elif self.current_title_state == states.TitleState.ARMY:
+            if event_type == events.EventType.VOICE:
+                text = event_data.lower().strip(".")
+                if text == "next army":
+                    self._current_army_index += 1
+                    self._current_army_index = self._current_army_index % len(self._armies)
+                    self.speak(f"Current army is now {'player' if self._current_army_index == 0 else 'opponent'}.")
+                    return
+                model_info, info_category, similarity = self._current_model_database.find_model_from_text(text)
+                self.add_model_to_army(events.EventType.VOICE, model_info=model_info)
+            elif event_type == events.EventType.QR:
+                self.add_model_to_army(events.EventType.QR, qrs_list=list(event_data.keys()))
+
+        elif self.current_title_state == states.TitleState.DEPLOYMENT:
+            if event_type == events.EventType.VOICE:
+                if self._deployment is not None:
+                    self._deployment.handle_voice_command(event_data)
+
+        elif self.current_title_state == states.TitleState.MATCH:
+            if event_type == events.EventType.VOICE:
+                text = event_data.lower().strip(".")
+                if text.startswith("show me"):
+                    pass
+                elif text == "hide":
+                    pass

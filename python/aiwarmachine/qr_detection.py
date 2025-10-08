@@ -136,3 +136,9 @@ class QRDetector(QtCore.QObject):
                 return qr_message, qr_data['pos']
 
         return None, None
+
+    def remove_qr(self, qr_message):
+        """Remove a qr from the detection data."""
+        if qr_message in self._detection_data:
+            del self._detection_data[qr_message]
+            self.new_qr_detection_data.emit(copy.deepcopy(self._detection_data))
