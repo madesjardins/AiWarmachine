@@ -1,3 +1,6 @@
+# DEPRECATED
+AiWarmachine has been depricated in favor of TabletopGuidedAdventures (https://github.com/madesjardins/tabletop-guided-adventures).
+
 # AiWarmachine
 A Warmachine (SteamForged Games, MKIV) tabletop wargaming companion and nemesis application.
 The game engine is not yet available, but everything is there for you to test your setup.
